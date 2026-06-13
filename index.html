@@ -11,32 +11,35 @@
 :root {
   --accent: #0EBB80;
   --accent-dark: #0A9466;
-  --accent-soft: #E1F7EE;
-  --bg: #EDEDF0;
+  --accent-soft: #DCF6EC;
+  --bg: #F4F5F8;
   --surface: #FFFFFF;
-  --text-primary: #000000;
-  --text-secondary: #6E6E73;
-  --text-tertiary: #A1A1A6;
-  --border: rgba(0,0,0,0.08);
-  --border-strong: rgba(0,0,0,0.16);
-  --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
-  --shadow-hover: 0 4px 12px rgba(0,0,0,0.08);
-  --shadow-modal: 0 20px 50px rgba(0,0,0,0.2);
+  --surface-elev: #F9FAFC;
+  --text-primary: #0B0E14;
+  --text-secondary: #5A6173;
+  --text-tertiary: #9CA3AE;
+  --border: rgba(11,14,20,0.08);
+  --border-strong: rgba(11,14,20,0.16);
+  --shadow: 0 1px 3px rgba(11,14,20,0.05), 0 1px 2px rgba(11,14,20,0.04);
+  --shadow-hover: 0 6px 16px rgba(11,14,20,0.08);
+  --shadow-modal: 0 20px 50px rgba(11,14,20,0.18);
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
-  --pass-bg: #E1F7EE;
+  --pass-bg: #D9F5E6;
   --pass-text: #064E36;
-  --fail-bg: #FCEBEB;
-  --fail-text: #501313;
-  --warn-bg: #FAEEDA;
-  --warn-text: #412402;
-  --compensable-bg: #FEF3C7;
+  --fail-bg: #FBE2E2;
+  --fail-text: #6B1818;
+  --warn-bg: #FBEDD3;
+  --warn-text: #4A2C04;
+  --compensable-bg: #FEE9B8;
   --compensable-text: #78350F;
+  --header-grad: linear-gradient(135deg, #0EBB80 0%, #14D49A 100%);
 }
 [data-theme="dark"] {
   --bg: #0A1224;
   --surface: #16213C;
+  --surface-elev: #1F2D4A;
   --text-primary: #F1F5F9;
   --text-secondary: #94A3B8;
   --text-tertiary: #64748B;
@@ -53,29 +56,35 @@
   --warn-text: #FCD34D;
   --compensable-bg: #3F2A0A;
   --compensable-text: #FBBF24;
-  --accent-soft: rgba(14, 187, 128, 0.15);
+  --accent-soft: rgba(14, 187, 128, 0.18);
+  --header-grad: linear-gradient(135deg, #0A9466 0%, #0EBB80 50%, #14D49A 100%);
 }
 body { margin: 0; background: var(--bg); color: var(--text-primary); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-weight: 400; -webkit-font-smoothing: antialiased; min-height: 100vh; transition: background 0.3s, color 0.3s; }
 .container { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1.5rem 2rem; }
-.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; gap: 12px; flex-wrap: wrap; }
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; gap: 12px; flex-wrap: wrap; background: var(--header-grad); padding: 14px 18px; border-radius: var(--radius-lg); box-shadow: var(--shadow); }
 .brand { display: flex; align-items: center; gap: 10px; }
-.brand-logo { height: 44px; width: 44px; object-fit: contain; border-radius: 10px; background: var(--surface); padding: 2px; }
-.brand-name { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.02em; }
-.brand-name .accent { color: var(--accent); }
+.brand-logo { height: 42px; width: 42px; object-fit: contain; border-radius: 10px; background: rgba(255,255,255,0.95); padding: 3px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+.brand-name { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.02em; color: #FFFFFF; }
+.brand-name .accent { color: #FFFFFF; opacity: 0.85; }
 .topbar-actions { display: flex; gap: 8px; align-items: center; }
-.btn-add { background: var(--accent); color: #fff; border: none; border-radius: var(--radius-md); padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: opacity 0.15s, transform 0.1s, background 0.15s; font-family: inherit; }
-.btn-add:hover { background: var(--accent-dark); }
+.btn-add { background: #FFFFFF; color: var(--accent-dark); border: none; border-radius: var(--radius-md); padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: opacity 0.15s, transform 0.1s, background 0.15s, box-shadow 0.15s; font-family: inherit; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+.btn-add:hover { background: #F4F5F8; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
 .btn-add:active { transform: scale(0.97); }
 .btn-add i { font-size: 16px; }
-.icon-action { background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px 12px; font-size: 16px; cursor: pointer; display: flex; align-items: center; transition: background 0.15s, transform 0.1s, border-color 0.15s; }
-.icon-action:hover { background: var(--bg); }
-.icon-action.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.icon-action { background: rgba(255,255,255,0.18); color: #FFFFFF; border: 1px solid rgba(255,255,255,0.25); border-radius: var(--radius-md); padding: 10px 12px; font-size: 16px; cursor: pointer; display: flex; align-items: center; transition: background 0.15s, transform 0.1s, border-color 0.15s; backdrop-filter: blur(8px); }
+.icon-action:hover { background: rgba(255,255,255,0.28); }
+.icon-action.active { background: #FFFFFF; color: var(--accent-dark); border-color: #FFFFFF; }
 .icon-action:active { transform: scale(0.95); }
 .header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 1.5rem; gap: 12px; flex-wrap: wrap; }
 .title { font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.02em; }
-.subtitle { font-size: 14px; color: var(--text-secondary); margin: 6px 0 0; }
+.subtitle { font-size: 14px; color: var(--text-secondary); margin: 6px 0 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.career-tag { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; background: var(--accent-soft); color: var(--accent-dark); border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s; border: 1px solid transparent; }
+.career-tag:hover { background: var(--accent); color: #fff; }
+.career-tag i { font-size: 14px; }
+[data-theme="dark"] .career-tag { color: #6EE7B7; }
+[data-theme="dark"] .career-tag:hover { background: var(--accent); color: #fff; }
 .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
-.metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; transition: transform 0.15s, box-shadow 0.15s; }
+.metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; transition: transform 0.15s, box-shadow 0.15s; box-shadow: var(--shadow); }
 .metric-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-hover); }
 .metric-label { font-size: 12px; color: var(--text-secondary); font-weight: 500; display: flex; align-items: center; gap: 6px; }
 .metric-label i { font-size: 14px; }
@@ -115,24 +124,25 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
 .card.drag-over { outline: 2px dashed var(--accent); outline-offset: -2px; }
 .card-banner { padding: 16px 20px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; position: relative; }
 
-.card-header-text { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
-.card-name { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.02em; text-transform: uppercase; line-height: 1; }
-.card-quatri { font-size: 10.5px; font-weight: 600; color: rgba(255,255,255,0.85); background: rgba(0,0,0,0.18); padding: 2px 7px; border-radius: 6px; letter-spacing: 0.02em; align-self: flex-start; }
+.card-header-text { display: flex; flex-direction: row; align-items: center; gap: 10px; flex: 1; min-width: 0; flex-wrap: wrap; }
+.card-name { font-size: 26px; font-weight: 800; margin: 0; letter-spacing: -0.02em; text-transform: uppercase; line-height: 1.05; }
+.card-quatri { font-size: 10.5px; font-weight: 700; color: rgba(255,255,255,0.95); background: rgba(0,0,0,0.22); padding: 3px 8px; border-radius: 6px; letter-spacing: 0.03em; flex-shrink: 0; }
 .card-grade { font-size: 32px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; line-height: 1; flex-shrink: 0; }
 .card-badge { width: 100%; padding: 8px 14px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 5px; text-align: center; }
 .card-badge i { font-size: 14px; }
 .badge-pass { background: var(--pass-bg); color: var(--pass-text); }
 .badge-fail { background: var(--fail-bg); color: var(--fail-text); }
 .badge-compensable { background: var(--compensable-bg); color: var(--compensable-text); }
-.collapsed-parts { padding: 10px 14px 14px; display: flex; gap: 6px; flex-wrap: nowrap; background: var(--surface); align-items: center; overflow: hidden; }
-.collapsed-part { background: var(--bg); border-radius: var(--radius-sm); padding: 8px 10px; text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 2px; transition: background 0.15s; flex: 1 1 0; min-width: 0; height: 48px; }
+.collapsed-parts { padding: 10px 14px 14px; display: flex; gap: 6px; flex-wrap: nowrap; background: var(--surface); align-items: center; overflow: hidden; max-height: 76px; }
+.collapsed-part { background: var(--bg); border-radius: var(--radius-sm); padding: 8px 10px; text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 2px; transition: background 0.15s; flex: 1 1 0; min-width: 0; height: 48px !important; max-height: 48px !important; min-height: 48px !important; overflow: hidden; box-sizing: border-box; }
 .collapsed-part-name { font-size: 11px; color: var(--text-secondary); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
 .collapsed-part-grade { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-primary); }
-.collapsed-part.empty .collapsed-part-grade { color: var(--text-tertiary); font-weight: 500; }
-.collapsed-more { background: transparent; border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); padding: 8px 10px; text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 2px; flex: 1 1 0; min-width: 0; height: 48px; color: var(--text-tertiary); font-size: 11px; font-weight: 600; }
+.collapsed-part.empty .collapsed-part-grade { color: var(--text-tertiary); font-weight: 600; font-size: 16px; }
+.collapsed-more { background: transparent; border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); padding: 8px 10px; text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 2px; flex: 1 1 0; min-width: 0; height: 48px !important; max-height: 48px !important; min-height: 48px !important; overflow: hidden; box-sizing: border-box; color: var(--text-tertiary); font-size: 11px; font-weight: 600; }
 .collapsed-more strong { display: block; font-size: 14px; font-weight: 700; color: var(--text-secondary); margin-top: 1px; }
-.card-body { padding: 0 20px 18px; display: flex; flex-direction: column; gap: 14px; background: var(--surface); max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.3s ease, opacity 0.2s, padding 0.3s; }
-.card.expanded .card-body { max-height: 800px; opacity: 1; padding: 4px 20px 18px; }
+.card-body { padding: 0 20px 18px; display: none; flex-direction: column; gap: 14px; background: var(--surface); }
+.card.expanded .card-body { display: flex; padding: 4px 20px 18px; }
+.card.expanded .card-header-text { flex-direction: column; gap: 6px; align-items: flex-start; }
 .card.expanded .collapsed-parts { display: none; }
 .parts { display: flex; flex-direction: column; gap: 10px; }
 .part { display: grid; grid-template-columns: 1fr 80px 50px; gap: 10px; align-items: center; font-size: 13.5px; }
@@ -155,7 +165,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
 .card-actions { display: flex; gap: 4px; justify-content: flex-end; }
 .icon-btn { background: transparent; border: none; cursor: pointer; color: var(--text-tertiary); padding: 6px 8px; border-radius: var(--radius-sm); display: inline-flex; align-items: center; font-size: 16px; transition: color 0.15s, background 0.15s; }
 .icon-btn:hover { color: var(--text-primary); background: var(--bg); }
-.empty { text-align: center; padding: 4rem 1rem; color: var(--text-secondary); font-size: 15px; grid-column: 1/-1; }
+.grid-empty { text-align: center; padding: 4rem 1rem; color: var(--text-secondary); font-size: 15px; grid-column: 1/-1; }
 .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: fadeIn 0.2s ease; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .modal { background: var(--surface); border-radius: var(--radius-lg); padding: 1.5rem; width: min(100%, 460px); display: flex; flex-direction: column; gap: 16px; box-shadow: var(--shadow-modal); max-height: 90vh; overflow-y: auto; animation: slideUp 0.25s ease; }
@@ -171,7 +181,17 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
 .color-swatch { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: transform 0.15s, border-color 0.15s; }
 .color-swatch:hover { transform: scale(1.12); }
 .color-swatch.selected { border-color: var(--text-primary); transform: scale(1.12); }
+.color-swatch.custom { background: linear-gradient(135deg, #FF5E5E 0%, #FFA500 25%, #FFE66D 50%, #06D6A0 75%, #118AB2 100%); position: relative; }
+.color-swatch.custom::after { content: '+'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #FFFFFF; font-size: 20px; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+.color-custom-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 8px 10px; background: var(--bg); border-radius: var(--radius-sm); }
+.color-custom-row input[type="color"] { width: 36px; height: 36px; border: none; padding: 0; background: transparent; cursor: pointer; border-radius: 6px; }
+.color-custom-row label { margin: 0; font-size: 13px; color: var(--text-secondary); }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+.career-modal-list { display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto; }
+.career-option { padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font-size: 14px; transition: background 0.15s, border-color 0.15s; }
+.career-option:hover { background: var(--bg); border-color: var(--border-strong); }
+.career-option.selected { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-dark); font-weight: 600; }
+[data-theme="dark"] .career-option.selected { color: #6EE7B7; }
 .btn { background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-md); padding: 10px 18px; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--text-primary); font-family: inherit; transition: background 0.15s; }
 .btn:hover { background: var(--bg); }
 .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -179,6 +199,23 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
 .btn-ghost { background: transparent; border: none; color: var(--text-secondary); font-size: 13px; cursor: pointer; padding: 6px 10px; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; font-weight: 500; border-radius: var(--radius-sm); transition: color 0.15s, background 0.15s; }
 .btn-ghost:hover { color: var(--text-primary); background: var(--bg); }
 .warn { font-size: 12px; color: var(--warn-text); background: var(--warn-bg); padding: 8px 12px; border-radius: var(--radius-md); margin-top: 8px; }
+.eval-tabs { display: flex; gap: 4px; flex-wrap: wrap; padding: 4px; background: var(--bg); border-radius: var(--radius-md); }
+.eval-tab { background: transparent; color: var(--text-secondary); border: none; border-radius: var(--radius-sm); padding: 6px 10px; font-size: 12.5px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; transition: background 0.15s, color 0.15s; }
+.eval-tab:hover { background: var(--surface); color: var(--text-primary); }
+.eval-tab.active { background: var(--surface); color: var(--text-primary); box-shadow: var(--shadow); font-weight: 600; }
+.eval-tab-name { line-height: 1; }
+.eval-tab-del { display: inline-flex; align-items: center; opacity: 0.5; transition: opacity 0.15s; padding: 1px; border-radius: 3px; }
+.eval-tab-del:hover { opacity: 1; background: rgba(0,0,0,0.1); }
+.eval-tab-del i { font-size: 13px; }
+.eval-tab-add { background: transparent; border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); padding: 6px 8px; font-size: 13px; color: var(--text-tertiary); cursor: pointer; display: inline-flex; align-items: center; transition: color 0.15s, border-color 0.15s; font-family: inherit; }
+.eval-tab-add:hover { color: var(--text-primary); border-color: var(--text-primary); }
+.eval-name-row { display: flex; flex-direction: column; }
+.eval-selector { padding: 8px 14px 0; display: flex; align-items: center; gap: 8px; background: var(--surface); }
+.eval-selector label { font-size: 12px; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px; font-weight: 500; margin: 0; }
+.eval-selector label i { font-size: 14px; }
+.eval-selector select { flex: 1; height: 30px; font-size: 12.5px; padding: 0 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text-primary); font-family: inherit; font-weight: 500; cursor: pointer; outline: none; transition: border-color 0.15s; }
+.eval-selector select:hover { border-color: var(--border-strong); }
+.eval-selector select:focus { border-color: var(--accent); }
 .stats { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
 .stat { background: var(--surface); padding: 8px 14px; border-radius: var(--radius-md); font-size: 13px; color: var(--text-secondary); box-shadow: var(--shadow); }
 .stat strong { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); }
@@ -209,7 +246,10 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
   <div class="header">
     <div>
       <h2 class="title">Les meves notes</h2>
-      <div class="subtitle" id="overall">—</div>
+      <div class="subtitle">
+        <span id="overall">—</span>
+        <span id="career-tag-root"></span>
+      </div>
     </div>
   </div>
   <div id="reorder-banner-root"></div>
@@ -242,6 +282,13 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     '23-24 Q2', '23-24 Q1',
     '22-23 Q2', '22-23 Q1'
   ];
+  const CAREERS = [
+    { id: 'gei', name: 'Grau en Enginyeria Informàtica', short: 'GEI', school: 'FIB - UPC' },
+    { id: 'gcd', name: 'Grau en Ciència i Enginyeria de Dades', short: 'GCD', school: 'FIB - UPC' },
+    { id: 'gia', name: 'Grau en Intel·ligència Artificial', short: 'GIA', school: 'FIB - UPC' },
+    { id: 'gem', name: 'Grau en Enginyeria Matemàtica en la Ciència de Dades', short: 'GEMCD', school: 'FIB - UPC' },
+    { id: 'other', name: 'Altres', short: 'Altres', school: '' }
+  ];
   let state = { subjects: [] };
   let editingId = null;
   let draft = null;
@@ -256,11 +303,25 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) state = JSON.parse(raw);
-    } catch (e) { state = { subjects: [] }; }
+    } catch (e) { state = { subjects: [], career: null }; }
     if (!state.subjects) state.subjects = [];
+    if (state.career === undefined) state.career = null;
     state.subjects.forEach(s => {
       if (!s.quatri) s.quatri = '25-26 Q2';
       if (s.ects === undefined || s.ects === null) s.ects = 6;
+      // Migracio: si te .name pero no .sigla, el .name passa a .sigla
+      if (s.name && !s.sigla) { s.sigla = s.name; s.fullName = ''; delete s.name; }
+      if (!s.sigla && s.name) { s.sigla = s.name; }
+      if (s.fullName === undefined) s.fullName = '';
+      if (!s.evaluations) {
+        const evalId = genId();
+        s.evaluations = [{ id: evalId, name: 'Avaluació', parts: s.parts || [] }];
+        s.activeEval = evalId;
+        delete s.parts;
+      }
+      if (!s.activeEval && s.evaluations.length > 0) {
+        s.activeEval = s.evaluations[0].id;
+      }
     });
     activeFilter = localStorage.getItem(FILTER_KEY) || 'ALL';
   }
@@ -268,7 +329,13 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
   function saveFilter() { try { localStorage.setItem(FILTER_KEY, activeFilter); } catch(e) {} }
   function genId() { return Math.random().toString(36).slice(2, 10); }
   function fmt(n) { return (Math.round(n * 100) / 100).toFixed(2); }
-  function getColor(name) { return PALETTE.find(p => p.name === name) || PALETTE[0]; }
+  function getColor(name) {
+    const found = PALETTE.find(p => p.name === name);
+    if (found) return found;
+    // Si comena per # ᅵs un color hex personalitzat
+    if (typeof name === 'string' && name.startsWith('#')) return { name: name, bg: name };
+    return PALETTE[0];
+  }
   function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function parseNum(v) {
     if (v === null || v === undefined || v === '') return null;
@@ -286,6 +353,47 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     const icon = document.getElementById('theme-icon');
     if (icon) icon.className = theme === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
   }
+  function renderCareerTag() {
+    const root = document.getElementById('career-tag-root');
+    if (!root) return;
+    if (!state.career) {
+      root.innerHTML = '<span class="career-tag" onclick="openCareerModal()"><i class="ti ti-school"></i>Tria la teva carrera</span>';
+    } else {
+      const c = CAREERS.find(x => x.id === state.career);
+      const label = c ? (c.short + (c.school ? ' · ' + c.school : '')) : 'Carrera';
+      root.innerHTML = '<span class="career-tag" onclick="openCareerModal()"><i class="ti ti-school"></i>' + escapeHtml(label) + '</span>';
+    }
+  }
+
+  window.openCareerModal = function() {
+    const root = document.getElementById('modal-root');
+    const optionsHtml = CAREERS.map(c => {
+      const cls = c.id === state.career ? 'career-option selected' : 'career-option';
+      return '<div class="' + cls + '" onclick="selectCareer(\'' + c.id + '\')"><strong>' + escapeHtml(c.short) + '</strong> — ' + escapeHtml(c.name) + (c.school ? ' <span style="color:var(--text-tertiary);font-size:12px;">(' + escapeHtml(c.school) + ')</span>' : '') + '</div>';
+    }).join('');
+    root.innerHTML =
+      '<div class="modal-bg" onclick="if(event.target===this)closeCareerModal()">' +
+        '<div class="modal">' +
+          '<h3>Tria la teva carrera</h3>' +
+          '<div class="career-modal-list">' + optionsHtml + '</div>' +
+          '<div class="modal-actions">' +
+            '<button class="btn" onclick="closeCareerModal()">Tancar</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  };
+
+  window.selectCareer = function(id) {
+    state.career = id;
+    save();
+    closeCareerModal();
+    renderCareerTag();
+  };
+
+  window.closeCareerModal = function() {
+    document.getElementById('modal-root').innerHTML = '';
+  };
+
   window.toggleTheme = function() {
     const cur = document.documentElement.getAttribute('data-theme') || 'light';
     const next = cur === 'light' ? 'dark' : 'light';
@@ -294,9 +402,18 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     updateThemeIcon(next);
   };
 
+  function getActiveEval(subject) {
+    if (!subject.evaluations || subject.evaluations.length === 0) return null;
+    return subject.evaluations.find(e => e.id === subject.activeEval) || subject.evaluations[0];
+  }
+  function getActiveParts(subject) {
+    const ev = getActiveEval(subject);
+    return ev ? ev.parts : [];
+  }
   function calcGrade(subject) {
     let total = 0, hasAny = false;
-    for (const p of subject.parts) {
+    const parts = getActiveParts(subject);
+    for (const p of parts) {
       if (p.grade !== null && p.grade !== undefined && p.grade !== '') {
         total += (parseFloat(p.grade) * parseFloat(p.weight)) / 100;
         hasAny = true;
@@ -307,7 +424,8 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
 
   function calcNeededPerPart(subject) {
     let earned = 0, remainingWeight = 0;
-    for (const p of subject.parts) {
+    const parts = getActiveParts(subject);
+    for (const p of parts) {
       const w = parseFloat(p.weight) || 0;
       if (p.grade !== null && p.grade !== undefined && p.grade !== '') {
         earned += (parseFloat(p.grade) * w) / 100;
@@ -377,12 +495,12 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     const grid = document.getElementById('grid');
     const filtered = getFiltered();
     if (state.subjects.length === 0) {
-      grid.innerHTML = '<div class="empty">Encara no tens cap assignatura.<br>Comença afegint-ne una.</div>';
+      grid.innerHTML = '<div class="grid-empty">Encara no tens cap assignatura.<br>Comença afegint-ne una.</div>';
       document.getElementById('overall').textContent = '—';
       return;
     }
     if (filtered.length === 0) {
-      grid.innerHTML = '<div class="empty">No hi ha assignatures en aquest filtre.</div>';
+      grid.innerHTML = '<div class="grid-empty">No hi ha assignatures en aquest filtre.</div>';
       return;
     }
     let validGrades = [], passing = 0;
@@ -396,7 +514,8 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       newStatus[s.id] = statusType;
       const justPassed = !firstRender && statusType === 'pass' && prevStatus[s.id] !== 'pass';
       const justFailed = !firstRender && statusType === 'fail' && prevStatus[s.id] !== 'fail';
-      if (g !== null) { validGrades.push(g); if (g >= 5) passing++; }
+      // Mitjana nomes amb assignatures finalitzades
+      if (g !== null && status.final) { validGrades.push(g); if (g >= 5) passing++; }
       const gradeText = g === null ? '—' : fmt(g);
       const neededPart = calcNeededPerPart(s);
 
@@ -427,20 +546,21 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       }
 
       // Collapsed view: parts as pills (max 4 visible; if more, show 3 + "+N more")
+      const activeParts = getActiveParts(s);
       const MAX_VISIBLE = 4;
-      const totalParts = s.parts.length;
+      const totalParts = activeParts.length;
       let visibleParts, hiddenCount;
       if (totalParts <= MAX_VISIBLE) {
-        visibleParts = s.parts;
+        visibleParts = activeParts;
         hiddenCount = 0;
       } else {
-        visibleParts = s.parts.slice(0, MAX_VISIBLE - 1);
+        visibleParts = activeParts.slice(0, MAX_VISIBLE - 1);
         hiddenCount = totalParts - (MAX_VISIBLE - 1);
       }
       let collapsedPartsHtml = visibleParts.map(p => {
         const hasGrade = p.grade !== null && p.grade !== undefined && p.grade !== '';
         const cls = hasGrade ? 'collapsed-part' : 'collapsed-part empty';
-        const val = hasGrade ? fmt(parseFloat(p.grade)) : '—';
+        const val = hasGrade ? fmt(parseFloat(p.grade)) : '–';
         return '<div class="' + cls + '">' +
           '<div class="collapsed-part-name" title="' + escapeHtml(p.name) + '">' + escapeHtml(p.name) + '</div>' +
           '<div class="collapsed-part-grade">' + val + '</div>' +
@@ -451,7 +571,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       }
 
       // Expanded view: editable parts
-      const partsHtml = s.parts.map(p => {
+      const partsHtml = activeParts.map(p => {
         const hasGrade = p.grade !== null && p.grade !== undefined && p.grade !== '';
         const showHint = !hasGrade && neededPart !== null && neededPart > 0 && neededPart <= 10;
         const hintValue = showHint ? fmt(neededPart) : '';
@@ -466,7 +586,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       }).join('');
 
       let earned = 0, pending = 0;
-      s.parts.forEach(p => {
+      activeParts.forEach(p => {
         const w = parseFloat(p.weight) || 0;
         if (p.grade !== null && p.grade !== undefined && p.grade !== '') {
           earned += (parseFloat(p.grade) * w) / 100;
@@ -491,6 +611,18 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       const dragAttrs = reorderMode ? 'draggable="true" ondragstart="onDragStart(event,\'' + s.id + '\')" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event,\'' + s.id + '\')" ondragend="onDragEnd(event)"' : '';
       const clickHandler = reorderMode ? '' : 'onclick="toggleExpand(\'' + s.id + '\')"';
 
+      // Selector d'avaluacio (nomes si te mes d'una)
+      let evalSelectorHtml = '';
+      if (s.evaluations && s.evaluations.length > 1) {
+        const opts = s.evaluations.map(ev =>
+          '<option value="' + ev.id + '"' + (ev.id === s.activeEval ? ' selected' : '') + '>' + escapeHtml(ev.name) + '</option>'
+        ).join('');
+        evalSelectorHtml = '<div class="eval-selector" onclick="event.stopPropagation()">' +
+          '<label><i class="ti ti-list-check"></i> Avaluació</label>' +
+          '<select onchange="switchSubjectEval(\'' + s.id + '\', this.value)">' + opts + '</select>' +
+        '</div>';
+      }
+
       // Badge d'estat final
       let badgeHtml = '';
       if (status.final) {
@@ -503,15 +635,19 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
         }
       }
 
+      const isExpanded = expandedId === s.id;
+      const sigla = s.sigla || s.name || '';
+      const displayName = isExpanded && s.fullName ? sigla + ' — ' + s.fullName : sigla;
       return '<div class="card' + expandedClass + animClass + reorderClass + '" data-card-id="' + s.id + '" ' + dragAttrs + ' ' + clickHandler + '>' +
         '<div class="card-banner" style="background:' + color.bg + ';color:#ffffff;">' +
           '<div class="card-header-text">' +
+            '<h3 class="card-name" style="color:#ffffff;">' + escapeHtml(displayName) + '</h3>' +
             '<span class="card-quatri">' + escapeHtml(s.quatri || '') + '</span>' +
-            '<h3 class="card-name" style="color:#ffffff;">' + escapeHtml(s.name) + '</h3>' +
           '</div>' +
           '<span class="card-grade" style="color:#ffffff;">' + gradeText + '</span>' +
         '</div>' +
         badgeHtml +
+        evalSelectorHtml +
         '<div class="collapsed-parts">' + collapsedPartsHtml + '</div>' +
         '<div class="card-body" onclick="event.stopPropagation()">' +
           '<div class="parts">' + partsHtml + '</div>' +
@@ -554,7 +690,8 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       totalEcts += ects;
       const g = calcGrade(s);
       const status = getStatus(s);
-      if (g !== null) grades.push(g);
+      // Nomes assignatures finalitzades compten per a la mitjana
+      if (g !== null && status.final) grades.push(g);
       if (status.final) {
         if (status.type === 'pass' || status.type === 'compensable') {
           passed++;
@@ -574,7 +711,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       '<div class="metric-card' + avgClass + '">' +
         '<div class="metric-label"><i class="ti ti-chart-line"></i>Mitjana</div>' +
         '<div class="metric-value">' + avgText + '</div>' +
-        '<div class="metric-subvalue">' + grades.length + ' amb nota</div>' +
+        '<div class="metric-subvalue">' + grades.length + ' finalitzades</div>' +
       '</div>' +
       '<div class="metric-card accent-pass">' +
         '<div class="metric-label"><i class="ti ti-school"></i>ECTS aprovats</div>' +
@@ -593,6 +730,14 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       '</div>';
   }
 
+  window.switchSubjectEval = function(subjectId, evalId) {
+    const s = state.subjects.find(x => x.id === subjectId);
+    if (!s) return;
+    s.activeEval = evalId;
+    save();
+    render();
+  };
+
   window.toggleExpand = function(subjectId) {
     if (reorderMode) return;
     expandedId = expandedId === subjectId ? null : subjectId;
@@ -606,7 +751,8 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     const value = inp.value;
     const s = state.subjects.find(x => x.id === sId);
     if (!s) return;
-    const p = s.parts.find(x => x.id === pId);
+    const activeParts = getActiveParts(s);
+    const p = activeParts.find(x => x.id === pId);
     if (!p) return;
     if (value === '' || value === null) {
       p.grade = null;
@@ -630,7 +776,8 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     const s = state.subjects.find(x => x.id === sId);
     if (!s) return;
     const pId = ev.target.dataset.part;
-    const p = s.parts.find(x => x.id === pId);
+    const activeParts = getActiveParts(s);
+    const p = activeParts.find(x => x.id === pId);
     if (p && ev.target.value !== '' && (ev.target.value.endsWith('.') || ev.target.value.endsWith(','))) {
       const v = parseNum(ev.target.value);
       if (v !== null) p.grade = Math.max(0, Math.min(10, v));
@@ -651,7 +798,8 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     let validGrades = [], passing = 0;
     state.subjects.forEach(sub => {
       const sg = calcGrade(sub);
-      if (sg !== null) {
+      const sst = getStatus(sub);
+      if (sg !== null && sst.final) {
         validGrades.push(sg);
         if (sg >= 5) passing++;
       }
@@ -713,43 +861,101 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       const usedColors = state.subjects.map(x => x.color);
       const freeColor = PALETTE.find(p => !usedColors.includes(p.name)) || PALETTE[state.subjects.length % PALETTE.length];
       const defaultQuatri = (activeFilter !== 'ALL' && QUATRIS.includes(activeFilter)) ? activeFilter : '25-26 Q2';
-      draft = { id: genId(), name: '', color: freeColor.name, quatri: defaultQuatri, ects: 6, parts: [{ id: genId(), name: '', weight: 100, grade: null }] };
+      const firstEvalId = genId();
+      draft = { id: genId(), sigla: '', fullName: '', color: freeColor.name, quatri: defaultQuatri, ects: 6,
+        evaluations: [{ id: firstEvalId, name: 'Avaluació', parts: [{ id: genId(), name: '', weight: 100, grade: null }] }],
+        activeEval: firstEvalId };
     }
     renderModal();
   };
 
-  function renderModal() {
-    const root = document.getElementById('modal-root');
-    const partsHtml = draft.parts.map(p =>
+  let modalActiveEval = null;
+
+  function renderEvalTabs() {
+    const container = document.getElementById('modal-eval-tabs');
+    if (!container) return;
+    const html = draft.evaluations.map(ev => {
+      const cls = ev.id === modalActiveEval ? 'eval-tab active' : 'eval-tab';
+      return '<button type="button" class="' + cls + '" onclick="switchModalEval(\'' + ev.id + '\')">' +
+        '<span class="eval-tab-name">' + escapeHtml(ev.name) + '</span>' +
+        (draft.evaluations.length > 1 ? '<span class="eval-tab-del" onclick="event.stopPropagation();removeEvaluation(\'' + ev.id + '\')" title="Eliminar avaluació"><i class="ti ti-x"></i></span>' : '') +
+      '</button>';
+    }).join('');
+    container.innerHTML = html +
+      '<button type="button" class="eval-tab-add" onclick="addEvaluation()" title="Afegir avaluació"><i class="ti ti-plus"></i></button>';
+  }
+
+  function renderEvalContent() {
+    const currentEval = draft.evaluations.find(e => e.id === modalActiveEval);
+    if (!currentEval) return;
+    const nameInput = document.getElementById('modal-eval-name');
+    if (nameInput && document.activeElement !== nameInput) nameInput.value = currentEval.name;
+    const partsContainer = document.getElementById('parts-edit');
+    if (!partsContainer) return;
+    partsContainer.innerHTML = currentEval.parts.map(p =>
       '<div class="part-edit">' +
         '<input type="text" placeholder="Nom (ex. Examen final)" value="' + escapeHtml(p.name) + '" data-part-id="' + p.id + '" data-field="name" />' +
         '<input type="number" placeholder="%" min="0" max="100" step="0.1" value="' + p.weight + '" data-part-id="' + p.id + '" data-field="weight" />' +
         '<button class="icon-btn" onclick="removePart(\'' + p.id + '\')" aria-label="Eliminar"><i class="ti ti-x"></i></button>' +
       '</div>'
     ).join('');
-    const totalW = draft.parts.reduce((a,p) => a + (parseFloat(p.weight) || 0), 0);
-    const warn = totalW < 100 ? '<div class="warn">⚠ La suma dels percentatges és ' + fmt(totalW) + '% (ha de ser ≥ 100%)</div>' : '';
-    const swatches = PALETTE.map(p =>
+    updateWarn();
+    syncDraftInputs();
+  }
+
+  function updateWarn() {
+    const currentEval = draft.evaluations.find(e => e.id === modalActiveEval);
+    if (!currentEval) return;
+    const totalW = currentEval.parts.reduce((a,p) => a + (parseFloat(p.weight) || 0), 0);
+    const warnContainer = document.getElementById('warn-root');
+    if (!warnContainer) return;
+    warnContainer.innerHTML = totalW < 100 ? '<div class="warn">⚠ La suma dels percentatges és ' + fmt(totalW) + '% (ha de ser ≥ 100%)</div>' : '';
+  }
+
+  function renderModal() {
+    const root = document.getElementById('modal-root');
+    if (!modalActiveEval || !draft.evaluations.find(e => e.id === modalActiveEval)) {
+      modalActiveEval = draft.evaluations[0].id;
+    }
+    const currentEval = draft.evaluations.find(e => e.id === modalActiveEval);
+    const isCustomColor = !PALETTE.find(p => p.name === draft.color);
+    const swatchesHtml = PALETTE.map(p =>
       '<div class="color-swatch ' + (p.name === draft.color ? 'selected' : '') + '" style="background:' + p.bg + ';" data-color="' + p.name + '" onclick="selectColor(\'' + p.name + '\')"></div>'
-    ).join('');
+    ).join('') +
+      '<div class="color-swatch custom ' + (isCustomColor ? 'selected' : '') + '" onclick="document.getElementById(\'modal-custom-color\').click()" title="Color personalitzat"></div>';
+    const customColorValue = isCustomColor ? draft.color : '#0EBB80';
+    const colorPickerHtml = '<div class="color-picker">' + swatchesHtml + '</div>' +
+      (isCustomColor ? '<div class="color-custom-row"><input type="color" id="modal-custom-color" value="' + customColorValue + '" oninput="selectCustomColor(this.value)" /><label>Color personalitzat: ' + customColorValue.toUpperCase() + '</label></div>' :
+       '<input type="color" id="modal-custom-color" value="' + customColorValue + '" oninput="selectCustomColor(this.value)" style="display:none;" />');
+
     const quatriOptions = QUATRIS.map(q =>
       '<option value="' + q + '" ' + (q === draft.quatri ? 'selected' : '') + '>' + q + '</option>'
     ).join('');
+
     root.innerHTML =
       '<div class="modal-bg" onclick="if(event.target===this)closeModal()">' +
         '<div class="modal">' +
           '<h3>' + (editingId ? 'Editar assignatura' : 'Nova assignatura') + '</h3>' +
-          '<div><label>Nom de l\'assignatura</label>' +
-            '<input type="text" id="modal-name" value="' + escapeHtml(draft.name) + '" placeholder="Ex. XC" /></div>' +
+          '<div><label>Sigla <span style="color:var(--accent-dark);">*</span></label>' +
+            '<input type="text" id="modal-sigla" value="' + escapeHtml(draft.sigla || '') + '" placeholder="Ex. SO" maxlength="12" /></div>' +
+          '<div><label>Nom complet <span style="color:var(--text-tertiary);font-weight:400;">(opcional)</span></label>' +
+            '<input type="text" id="modal-fullname" value="' + escapeHtml(draft.fullName || '') + '" placeholder="Ex. Sistemes Operatius" /></div>' +
           '<div><label>Quatrimestre</label>' +
             '<select id="modal-quatri">' + quatriOptions + '</select></div>' +
           '<div><label>ECTS</label>' +
             '<input type="number" id="modal-ects" value="' + (draft.ects || 6) + '" min="0" max="60" step="0.5" /></div>' +
-          '<div><label>Color</label><div class="color-picker">' + swatches + '</div></div>' +
+          '<div><label>Color</label>' + colorPickerHtml + '</div>' +
+          '<div><label>Tipus d\'avaluació</label>' +
+            '<div class="eval-tabs" id="modal-eval-tabs"></div>' +
+          '</div>' +
+          '<div class="eval-name-row">' +
+            '<label>Nom de l\'avaluació</label>' +
+            '<input type="text" id="modal-eval-name" value="' + escapeHtml(currentEval.name) + '" oninput="renameEvaluation(this.value)" placeholder="Ex. Continuada / Final" />' +
+          '</div>' +
           '<div><label>Apartats i percentatges</label>' +
-            '<div class="parts-edit" id="parts-edit">' + partsHtml + '</div>' +
+            '<div class="parts-edit" id="parts-edit"></div>' +
             '<button class="btn-ghost" onclick="addPart()" style="margin-top:6px;"><i class="ti ti-plus"></i>Afegir apartat</button>' +
-            warn +
+            '<div id="warn-root"></div>' +
           '</div>' +
           '<div class="modal-actions">' +
             '<button class="btn" onclick="closeModal()">Cancel·lar</button>' +
@@ -757,7 +963,9 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
           '</div>' +
         '</div>' +
       '</div>';
-    syncDraftInputs();
+
+    renderEvalTabs();
+    renderEvalContent();
   }
 
   function syncDraftInputs() {
@@ -765,23 +973,14 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       inp.addEventListener('input', function() {
         const pid = this.dataset.partId;
         const f = this.dataset.field;
-        const p = draft.parts.find(x => x.id === pid);
+        const ev = draft.evaluations.find(e => e.id === modalActiveEval);
+        if (!ev) return;
+        const p = ev.parts.find(x => x.id === pid);
         if (p) {
           if (f === 'weight') p.weight = parseFloat(this.value) || 0;
           else p[f] = this.value;
         }
-        const totalW = draft.parts.reduce((a,p) => a + (parseFloat(p.weight) || 0), 0);
-        const existing = document.querySelector('.warn');
-        if (totalW < 100 && !existing) {
-          const w = document.createElement('div');
-          w.className = 'warn';
-          w.textContent = '⚠ La suma dels percentatges és ' + fmt(totalW) + '% (ha de ser ≥ 100%)';
-          document.getElementById('parts-edit').parentElement.appendChild(w);
-        } else if (totalW >= 100 && existing) {
-          existing.remove();
-        } else if (existing) {
-          existing.textContent = '⚠ La suma dels percentatges és ' + fmt(totalW) + '% (ha de ser ≥ 100%)';
-        }
+        updateWarn();
       });
     });
   }
@@ -793,37 +992,99 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     });
   };
 
+  function captureModalFields() {
+    // Conservar valors actuals dels camps abans de re-renderitzar tot el modal
+    const sigla = document.getElementById('modal-sigla');
+    const fullname = document.getElementById('modal-fullname');
+    const quatri = document.getElementById('modal-quatri');
+    const ects = document.getElementById('modal-ects');
+    if (sigla) draft.sigla = sigla.value;
+    if (fullname) draft.fullName = fullname.value;
+    if (quatri) draft.quatri = quatri.value;
+    if (ects) draft.ects = parseFloat(ects.value) || 6;
+  }
+
   window.addPart = function() {
-    draft.parts.push({ id: genId(), name: '', weight: 0, grade: null });
-    renderModal();
+    const ev = draft.evaluations.find(e => e.id === modalActiveEval);
+    if (ev) ev.parts.push({ id: genId(), name: '', weight: 0, grade: null });
+    renderEvalContent();
   };
   window.removePart = function(pid) {
-    draft.parts = draft.parts.filter(p => p.id !== pid);
+    const ev = draft.evaluations.find(e => e.id === modalActiveEval);
+    if (ev) ev.parts = ev.parts.filter(p => p.id !== pid);
+    renderEvalContent();
+  };
+  window.switchModalEval = function(eid) {
+    captureModalFields();
+    modalActiveEval = eid;
+    renderEvalTabs();
+    renderEvalContent();
+  };
+  window.addEvaluation = function() {
+    captureModalFields();
+    const newId = genId();
+    const num = draft.evaluations.length + 1;
+    draft.evaluations.push({ id: newId, name: 'Avaluació ' + num, parts: [{ id: genId(), name: '', weight: 100, grade: null }] });
+    modalActiveEval = newId;
+    renderEvalTabs();
+    renderEvalContent();
+  };
+  window.removeEvaluation = function(eid) {
+    if (draft.evaluations.length <= 1) { alert('Ha d\'haver-hi com a mínim una avaluació'); return; }
+    if (!confirm('Eliminar aquesta avaluació i les seves notes?')) return;
+    captureModalFields();
+    draft.evaluations = draft.evaluations.filter(e => e.id !== eid);
+    if (modalActiveEval === eid) modalActiveEval = draft.evaluations[0].id;
+    if (draft.activeEval === eid) draft.activeEval = draft.evaluations[0].id;
+    renderEvalTabs();
+    renderEvalContent();
+  };
+  window.renameEvaluation = function(newName) {
+    const ev = draft.evaluations.find(e => e.id === modalActiveEval);
+    if (ev) ev.name = newName;
+    renderEvalTabs(); // Nomes refrescar les tabs perqu mostrin el nou nom
+  };
+  window.selectCustomColor = function(hexValue) {
+    draft.color = hexValue;
     renderModal();
   };
   window.closeModal = function() {
     document.getElementById('modal-root').innerHTML = '';
-    draft = null; editingId = null;
+    draft = null; editingId = null; modalActiveEval = null;
   };
   window.saveModal = function() {
     const s = draft;
-    const nameInput = document.getElementById('modal-name');
-    s.name = nameInput.value.trim();
-    if (!s.name) { alert("Posa un nom a l'assignatura"); return; }
+    const siglaInput = document.getElementById('modal-sigla');
+    s.sigla = siglaInput.value.trim();
+    if (!s.sigla) { alert("La sigla és obligatòria"); return; }
+    const fnInput = document.getElementById('modal-fullname');
+    s.fullName = fnInput.value.trim();
     const qInput = document.getElementById('modal-quatri');
     s.quatri = qInput.value;
     const eInput = document.getElementById('modal-ects');
     s.ects = parseFloat(eInput.value) || 6;
-    if (s.parts.length === 0) { alert("Afegeix com a mínim un apartat"); return; }
-    const totalW = s.parts.reduce((a,p) => a + (parseFloat(p.weight) || 0), 0);
-    if (totalW < 100) { if (!confirm('La suma és ' + fmt(totalW) + '% (no arriba al 100%). Vols desar igualment?')) return; }
+    // Validar totes les avaluacions
+    for (const ev of s.evaluations) {
+      if (ev.parts.length === 0) { alert("Cada avaluació ha de tenir com a mínim un apartat (" + ev.name + ")"); return; }
+      const tw = ev.parts.reduce((a,p) => a + (parseFloat(p.weight) || 0), 0);
+      if (tw < 100) {
+        if (!confirm('La suma de "' + ev.name + '" és ' + fmt(tw) + '%. Vols desar igualment?')) return;
+      }
+    }
+    // Conservar notes existents per ID de part
     if (editingId) {
       const idx = state.subjects.findIndex(x => x.id === editingId);
       if (idx >= 0) {
         const existing = state.subjects[idx];
-        s.parts.forEach(np => {
-          const old = existing.parts.find(op => op.id === np.id);
-          if (old) np.grade = old.grade;
+        const existingEvals = existing.evaluations || [];
+        s.evaluations.forEach(newEv => {
+          const oldEv = existingEvals.find(e => e.id === newEv.id);
+          if (oldEv) {
+            newEv.parts.forEach(np => {
+              const oldP = oldEv.parts.find(op => op.id === np.id);
+              if (oldP) np.grade = oldP.grade;
+            });
+          }
         });
         state.subjects[idx] = s;
       }
@@ -841,6 +1102,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
   loadTheme();
   load();
   setLogo();
+  renderCareerTag();
   renderFilters();
   render();
 })();
