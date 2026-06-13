@@ -127,6 +127,10 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
 .card-header-text { display: flex; flex-direction: row; align-items: center; gap: 10px; flex: 1; min-width: 0; flex-wrap: wrap; }
 .card-name { font-size: 26px; font-weight: 800; margin: 0; letter-spacing: -0.02em; text-transform: uppercase; line-height: 1.05; }
 .card-quatri { font-size: 10.5px; font-weight: 700; color: rgba(255,255,255,0.95); background: rgba(0,0,0,0.22); padding: 3px 8px; border-radius: 6px; letter-spacing: 0.03em; flex-shrink: 0; }
+.card-matricula { font-size: 10.5px; font-weight: 700; color: rgba(255,255,255,0.98); background: rgba(255,255,255,0.18); padding: 3px 8px; border-radius: 6px; letter-spacing: 0.03em; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(255,255,255,0.25); }
+.card-matricula i { font-size: 12px; }
+.card-matricula.first { display: none; }
+.card.expanded .card-matricula.first { display: inline-flex; opacity: 0.7; }
 .card-grade { font-size: 32px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; line-height: 1; flex-shrink: 0; }
 .card-badge { width: 100%; padding: 8px 14px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 5px; text-align: center; }
 .card-badge i { font-size: 14px; }
@@ -596,6 +600,35 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     return ((5 - earned) * 100) / remainingWeight;
   }
 
+  function getMatriculaInfo(subject) {
+    // Agrupa per sigla i ordena per quatri. La mes antiga = 1a matricula
+    const sigla = (subject.sigla || subject.name || '').trim().toUpperCase();
+    if (!sigla) return { num: 1, total: 1 };
+    const sameGroup = state.subjects.filter(s => ((s.sigla || s.name || '').trim().toUpperCase()) === sigla);
+    if (sameGroup.length <= 1) return { num: 1, total: 1 };
+    // Ordenar per quatri (mes antic primer)
+    const sorted = [...sameGroup].sort((a, b) => QUATRIS.indexOf(b.quatri) - QUATRIS.indexOf(a.quatri));
+    const idx = sorted.findIndex(s => s.id === subject.id);
+    return { num: idx + 1, total: sameGroup.length };
+  }
+
+  // Per a una sigla, retorna l'assignatura que aporta ECTS (la primera aprovada o compensable)
+  // Si cap aprovada, retorna null
+  function getEctsContributor(sigla) {
+    if (!sigla) return null;
+    const sig = sigla.trim().toUpperCase();
+    const group = state.subjects.filter(s => ((s.sigla || s.name || '').trim().toUpperCase()) === sig);
+    if (group.length === 0) return null;
+    // Ordenat per quatri antic -> nou
+    const sorted = [...group].sort((a, b) => QUATRIS.indexOf(b.quatri) - QUATRIS.indexOf(a.quatri));
+    // Trobar la primera aprovada/compensable
+    for (const s of sorted) {
+      const st = getStatus(s);
+      if (st.final && (st.type === 'pass' || st.type === 'compensable')) return s;
+    }
+    return null;
+  }
+
   function getStatus(subject) {
     const g = calcGrade(subject);
     const needed = calcNeededPerPart(subject);
@@ -771,6 +804,14 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       const dragAttrs = reorderMode ? 'draggable="true" ondragstart="onDragStart(event,\'' + s.id + '\')" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event,\'' + s.id + '\')" ondragend="onDragEnd(event)"' : '';
       const clickHandler = reorderMode ? '' : 'onclick="toggleExpand(\'' + s.id + '\')"';
 
+      // Info de matricula
+      const matricula = getMatriculaInfo(s);
+      const matSuffix = ['', '1a', '2a', '3a', '4a', '5a', '6a'][matricula.num] || (matricula.num + 'a');
+      const matCls = matricula.num === 1 ? 'card-matricula first' : 'card-matricula';
+      const matriculaHtml = matricula.total > 1 || matricula.num > 1
+        ? '<span class="' + matCls + '"><i class="ti ti-bookmark"></i>' + matSuffix + ' matrícula</span>'
+        : '';
+
       // Selector d'avaluacio (nomes si te mes d'una)
       let evalSelectorHtml = '';
       if (s.evaluations && s.evaluations.length > 1) {
@@ -803,6 +844,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
           '<div class="card-header-text">' +
             '<h3 class="card-name" style="color:#ffffff;">' + escapeHtml(displayName) + '</h3>' +
             '<span class="card-quatri">' + escapeHtml(s.quatri || '') + '</span>' +
+            (matriculaHtml) +
           '</div>' +
           '<span class="card-grade" style="color:#ffffff;">' + gradeText + '</span>' +
         '</div>' +
@@ -841,53 +883,105 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     const dash = document.getElementById('dashboard');
     if (state.subjects.length === 0) { dash.innerHTML = ''; return; }
 
-    let totalEcts = 0, passedEcts = 0;
     let total = filtered.length, passed = 0, pending = 0;
     let grades = [];
 
     filtered.forEach(s => {
-      const ects = parseFloat(s.ects) || 0;
-      totalEcts += ects;
       const g = calcGrade(s);
       const status = getStatus(s);
-      // Nomes assignatures finalitzades compten per a la mitjana
       if (g !== null && status.final) grades.push(g);
       if (status.final) {
-        if (status.type === 'pass' || status.type === 'compensable') {
-          passed++;
-          passedEcts += ects;
-        }
+        if (status.type === 'pass' || status.type === 'compensable') passed++;
       } else {
         pending++;
       }
     });
+
+    // ECTS sense doble compte: agrupar per sigla i comptar nomes 1 vegada
+    const seenSiglas = new Set();
+    let totalEcts = 0, passedEcts = 0;
+    filtered.forEach(s => {
+      const sig = (s.sigla || s.name || '').trim().toUpperCase();
+      if (sig && seenSiglas.has(sig)) return; // ja comptat
+      if (sig) seenSiglas.add(sig);
+      const ects = parseFloat(s.ects) || 0;
+      totalEcts += ects;
+      // Per ECTS aprovats: si alguna de les matricules d'aquesta sigla ha aprovat, sumar ects
+      const contributor = sig ? getEctsContributor(sig) : (getStatus(s).type === 'pass' || getStatus(s).type === 'compensable' ? s : null);
+      if (contributor) passedEcts += ects;
+    });
+
+    // Detectar si hi ha assignatures repetides
+    const siglaCounts = {};
+    state.subjects.forEach(s => {
+      const sig = (s.sigla || s.name || '').trim().toUpperCase();
+      if (!sig) return;
+      siglaCounts[sig] = (siglaCounts[sig] || 0) + 1;
+    });
+    const repeatedSiglas = Object.keys(siglaCounts).filter(sig => siglaCounts[sig] > 1);
+    const hasRepeated = repeatedSiglas.length > 0;
+
+    // Aprovades a 1a matricula: nomes calculat si hi ha repetides
+    let firstTryPassed = 0, firstTryTotal = 0, firstTryPct = 0;
+    if (hasRepeated) {
+      // Per a cada sigla en filtered: si la 1a matricula ja t status final i va aprovar -> conta
+      const siglasInFilter = new Set();
+      filtered.forEach(s => {
+        const sig = (s.sigla || s.name || '').trim().toUpperCase();
+        if (sig) siglasInFilter.add(sig);
+      });
+      siglasInFilter.forEach(sig => {
+        const group = state.subjects.filter(s => ((s.sigla || s.name || '').trim().toUpperCase()) === sig);
+        if (group.length === 0) return;
+        // Ordenar per quatri (mes antic primer)
+        const sorted = [...group].sort((a, b) => QUATRIS.indexOf(b.quatri) - QUATRIS.indexOf(a.quatri));
+        const firstAttempt = sorted[0];
+        const st = getStatus(firstAttempt);
+        if (st.final) {
+          firstTryTotal++;
+          if (st.type === 'pass' || st.type === 'compensable') firstTryPassed++;
+        }
+      });
+      firstTryPct = firstTryTotal > 0 ? Math.round((firstTryPassed / firstTryTotal) * 100) : 0;
+    }
 
     const avg = grades.length > 0 ? grades.reduce((a,b)=>a+b,0) / grades.length : null;
     const avgText = avg !== null ? fmt(avg) : '—';
     const avgClass = avg === null ? '' : (avg >= 5 ? ' accent-pass' : ' accent-fail');
     const fmtEcts = (n) => { const r = Math.round(n * 10) / 10; return r % 1 === 0 ? String(r) : r.toFixed(1); };
 
-    dash.innerHTML =
-      '<div class="metric-card' + avgClass + '">' +
+    let cards = '';
+    cards += '<div class="metric-card' + avgClass + '">' +
         '<div class="metric-label"><i class="ti ti-chart-line"></i>Mitjana</div>' +
         '<div class="metric-value">' + avgText + '</div>' +
         '<div class="metric-subvalue">' + grades.length + ' finalitzades</div>' +
-      '</div>' +
-      '<div class="metric-card accent-pass">' +
+      '</div>';
+    cards += '<div class="metric-card accent-pass">' +
         '<div class="metric-label"><i class="ti ti-school"></i>ECTS aprovats</div>' +
         '<div class="metric-value">' + fmtEcts(passedEcts) + '<span style="font-size:16px;color:var(--text-tertiary);font-weight:500;"> / ' + fmtEcts(totalEcts) + '</span></div>' +
         '<div class="metric-subvalue">' + (totalEcts > 0 ? Math.round(passedEcts/totalEcts*100) : 0) + '% del total</div>' +
-      '</div>' +
-      '<div class="metric-card accent-pass">' +
+      '</div>';
+    cards += '<div class="metric-card accent-pass">' +
         '<div class="metric-label"><i class="ti ti-circle-check"></i>Aprovades</div>' +
         '<div class="metric-value">' + passed + '<span style="font-size:16px;color:var(--text-tertiary);font-weight:500;"> / ' + total + '</span></div>' +
         '<div class="metric-subvalue">' + (total > 0 ? Math.round(passed/total*100) : 0) + '% del total</div>' +
-      '</div>' +
-      '<div class="metric-card accent-warn">' +
+      '</div>';
+    if (hasRepeated) {
+      // Si hi ha repetides, reemplacem "Pendents" per "1a matricula"
+      cards += '<div class="metric-card accent-pass">' +
+        '<div class="metric-label"><i class="ti ti-medal"></i>1a matrícula</div>' +
+        '<div class="metric-value">' + firstTryPct + '%<span style="font-size:16px;color:var(--text-tertiary);font-weight:500;"></span></div>' +
+        '<div class="metric-subvalue">' + firstTryPassed + ' de ' + firstTryTotal + ' aprovades</div>' +
+      '</div>';
+    } else {
+      cards += '<div class="metric-card accent-warn">' +
         '<div class="metric-label"><i class="ti ti-clock"></i>Pendents</div>' +
         '<div class="metric-value">' + pending + '</div>' +
         '<div class="metric-subvalue">sense totes les notes</div>' +
       '</div>';
+    }
+
+    dash.innerHTML = cards;
   }
 
   window.switchSubjectEval = function(subjectId, evalId) {
@@ -1349,11 +1443,17 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     const fmtEcts = (n) => { const r = Math.round(n*10)/10; return r % 1 === 0 ? String(r) : r.toFixed(1); };
 
     // Cercle de progres ECTS de la carrera (no del filtre)
-    const careerPassed = state.subjects.reduce((sum, s) => {
-      const st = getStatus(s);
-      if (st.final && (st.type === 'pass' || st.type === 'compensable')) return sum + (parseFloat(s.ects) || 0);
-      return sum;
-    }, 0);
+    // Agrupar per sigla per evitar doble compte
+    const seenSiglasCar = new Set();
+    let careerPassed = 0;
+    state.subjects.forEach(s => {
+      const sig = (s.sigla || s.name || '').trim().toUpperCase();
+      if (sig && seenSiglasCar.has(sig)) return;
+      if (sig) seenSiglasCar.add(sig);
+      const contributor = sig ? getEctsContributor(sig) : null;
+      const directOk = !sig && (() => { const st = getStatus(s); return st.final && (st.type === 'pass' || st.type === 'compensable'); })();
+      if (contributor || directOk) careerPassed += parseFloat(s.ects) || 0;
+    });
     const careerPct = Math.min(100, (careerPassed / careerEcts) * 100);
     const circR = 70;
     const circC = 2 * Math.PI * circR;
