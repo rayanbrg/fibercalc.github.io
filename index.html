@@ -485,7 +485,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
 .friend-info { flex: 1; min-width: 0; }
 .friend-name { font-size: 14px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .friend-username { font-size: 12px; color: var(--text-tertiary); }
-.friend-action { flex-shrink: 0; }
+.friend-action { flex-shrink: 0; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .friend-status-badge { font-size: 12px; font-weight: 600; color: var(--text-secondary); background: var(--bg); padding: 6px 12px; border-radius: 999px; white-space: nowrap; }
 .friends-empty { text-align: center; padding: 3rem 2rem; color: var(--text-secondary); font-size: 14px; background: var(--surface); border-radius: var(--radius-lg); border: 1px dashed var(--border-strong); }
 .friends-empty i { font-size: 32px; color: var(--text-tertiary); display: block; margin-bottom: 12px; }
@@ -2777,6 +2777,51 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     }
   };
 
+  window.acceptFriendRequest = async function(otherUid) {
+    try {
+      const id = pairId(fbUser.uid, otherUid);
+      const ref = window.fbDocRef('friendships/' + id);
+      const snap = await window.fbGetDoc(ref);
+      if (!snap.exists()) { await renderFriendsLists(); return; }
+      const data = snap.data();
+      data.status = 'accepted';
+      data.acceptedAt = Date.now();
+      await window.fbSetDoc(ref, data);
+      await renderFriendsLists();
+    } catch (err) {
+      console.error(err);
+      alert('Error acceptant la sol·licitud.');
+    }
+  };
+
+  window.removeFriend = async function(otherUid) {
+    if (!confirm('Deixar de ser amics? Ja no podreu veure el progrés mutu.')) return;
+    try {
+      const id = pairId(fbUser.uid, otherUid);
+      await window.fbDeleteDoc(window.fbDocRef('friendships/' + id));
+      await renderFriendsLists();
+      const resultEl = document.getElementById('friend-search-result');
+      if (resultEl && resultEl.innerHTML.trim()) await window.searchFriend();
+    } catch (err) {
+      console.error(err);
+      alert('Error eliminant l\'amic.');
+    }
+  };
+
+    window.removeFriend = async function(otherUid) {
+    if (!confirm('Deixar de ser amics? Ja no podreu veure el progrés mutu.')) return;
+    try {
+      const id = pairId(fbUser.uid, otherUid);
+      await window.fbDeleteDoc(window.fbDocRef('friendships/' + id));
+      await renderFriendsLists();
+      const resultEl = document.getElementById('friend-search-result');
+      if (resultEl && resultEl.innerHTML.trim()) await window.searchFriend();
+    } catch (err) {
+      console.error(err);
+      alert('Error eliminant l\'amic.');
+    }
+  };
+
   window.searchFriend = async function() {
     const input = document.getElementById('friend-search-input');
     const resultEl = document.getElementById('friend-search-result');
@@ -2864,7 +2909,10 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       if (received.length > 0) {
         html += '<div class="friends-section-title"><i class="ti ti-user-plus"></i>Sol·licituds rebudes</div>' +
           '<div class="friend-list">' +
-          received.map(item => renderFriendCard(profiles[item.otherUid], '<span class="friend-status-badge">Pendent</span>')).join('') +
+          received.map(item => renderFriendCard(profiles[item.otherUid],
+            '<button class="btn btn-primary" onclick="acceptFriendRequest(\'' + item.otherUid + '\')">Acceptar</button>' +
+            '<button class="btn" onclick="cancelFriendRequest(\'' + item.otherUid + '\')">Rebutjar</button>'
+          )).join('') +
           '</div>';
       }
 
@@ -2880,7 +2928,9 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
         html += '<div class="friends-empty">Encara no tens amics. Cerca\'n un pel seu nom d\'usuari!</div>';
       } else {
         html += '<div class="friend-list">' +
-          friends.map(item => renderFriendCard(profiles[item.otherUid], '')).join('') +
+          friends.map(item => renderFriendCard(profiles[item.otherUid],
+            '<button class="btn" onclick="removeFriend(\'' + item.otherUid + '\')">Eliminar</button>'
+          )).join('') +
           '</div>';
       }
 
