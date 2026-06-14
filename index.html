@@ -2661,7 +2661,10 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
   async function handleAuthChanged(user) {
     fbUser = user;
     updateUserUI();
-    if (!user) return;
+    if (!user) {
+      if (activepage=='friends') renderFriends();
+      return;
+    }
     // Just s'ha fet login: comprovar si hi ha dades al nᅵvol
     syncing = true;
     try {
@@ -2715,6 +2718,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       render();
       if (activePage === 'stats') renderStats();
       if (activePage === 'calendar') renderCalendar();
+      if (activePage === 'friends') renderFriends();
       if (!state.username) openUsernameModal();
     }
   }
@@ -2908,7 +2912,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
 
     await renderFriendsLists();
   }
-  
+
   function initFirebaseFlow() {
     if (!window.firebaseReady) {
       window.addEventListener('firebase-ready', initFirebaseFlow, { once: true });
