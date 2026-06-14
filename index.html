@@ -646,6 +646,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     if (!state.subjects) state.subjects = [];
     if (state.career === undefined) state.career = null;
     if (state.userName === undefined) state.userName = '';
+    if (state.username === undefined) state.username = '';
     if (!state.events) state.events = [];
     state.subjects.forEach(s => {
       if (!s.quatri) s.quatri = '25-26 Q2';
@@ -841,6 +842,74 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     if (!st.final) return 'none';
     return st.type;
   }
+
+  function getStatusType(subject) {
+    const st = getStatus(subject);
+    if (!st.final) return 'none';
+    return st.type;
+  }
+
+  function computeProfileStats() {
+    const subjects = state.subjects || [];
+    const seenSiglas = new Set();
+    let totalEcts = 0, passedEcts = 0;
+    const allGrades = [], passedGrades = [];
+    const byQuatri = {};
+
+    subjects.forEach(s => {
+      const g = calcGrade(s);
+      const st = getStatus(s);
+      const ects = parseFloat(s.ects) || 0;
+      const q = s.quatri || '';
+
+      if (st.final && g !== null) {
+        allGrades.push(g);
+        if (st.type === 'pass' || st.type === 'compensable') passedGrades.push(g);
+      }
+
+      const sig = (s.sigla || s.name || '').trim().toUpperCase();
+      if (!(sig && seenSiglas.has(sig))) {
+        if (sig) seenSiglas.add(sig);
+        totalEcts += ects;
+        const contributor = sig ? getEctsContributor(sig) : (st.final && (st.type === 'pass' || st.type === 'compensable') ? s : null);
+        if (contributor) passedEcts += ects;
+      }
+
+      if (q) {
+        if (!byQuatri[q]) byQuatri[q] = { allGrades: [], passedGrades: [], ectsTotal: 0, ectsApproved: 0 };
+        byQuatri[q].ectsTotal += ects;
+        if (st.final && g !== null) {
+          byQuatri[q].allGrades.push(g);
+          if (st.type === 'pass' || st.type === 'compensable') {
+            byQuatri[q].passedGrades.push(g);
+            byQuatri[q].ectsApproved += ects;
+          }
+        }
+      }
+    });
+
+    const avg = arr => arr.length ? Math.round((arr.reduce((a,b)=>a+b,0) / arr.length) * 100) / 100 : null;
+
+    const byQuatriOut = {};
+    Object.keys(byQuatri).forEach(q => {
+      const d = byQuatri[q];
+      byQuatriOut[q] = {
+        avgAll: avg(d.allGrades),
+        avgPassed: avg(d.passedGrades),
+        ectsApproved: d.ectsApproved,
+        ectsTotal: d.ectsTotal
+      };
+    });
+
+    return {
+      avgAll: avg(allGrades),
+      avgPassed: avg(passedGrades),
+      ectsApproved: passedEcts,
+      ectsTotal: totalEcts,
+      byQuatri: byQuatriOut
+    };
+  }
+
 
   function renderFilters() {
     const bar = document.getElementById('filter-bar');
@@ -2354,6 +2423,65 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     document.getElementById('modal-root').innerHTML = '';
   };
 
+  window.openUsernameModal = function() {
+    const root = document.getElementById('modal-root');
+    root.innerHTML =
+      '<div class="modal-bg">' +
+        '<div class="modal" style="max-width:380px;">' +
+          '<div class="auth-modal-content">' +
+            '<h3>Tria un nom d\'usuari</h3>' +
+            '<p>El necessitar\u00e0s per afegir amics a FiberCalc. Nom\u00e9s lletres min\u00fascules, n\u00fameros i guió baix (3-20 car\u00e0cters).</p>' +
+            '<input type="text" id="username-input" placeholder="el_teu_usuari" maxlength="20" style="text-align:center;font-size:16px;" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,\'\')" />' +
+            '<div class="auth-error" id="username-error"></div>' +
+            '<button class="btn btn-primary" onclick="saveUsername()" id="username-save-btn" style="width:100%;">Confirmar</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    setTimeout(() => { const i = document.getElementById('username-input'); if (i) i.focus(); }, 0);
+  };
+
+  window.saveUsername = async function() {
+    const input = document.getElementById('username-input');
+    const errorEl = document.getElementById('username-error');
+    const btn = document.getElementById('username-save-btn');
+    const val = input.value.trim();
+    errorEl.classList.remove('show');
+
+    if (!/^[a-z0-9_]{3,20}$/.test(val)) {
+      errorEl.textContent = 'Ha de tenir entre 3 i 20 car\u00e0cters: lletres min\u00fascules, n\u00fameros i guió baix.';
+      errorEl.classList.add('show');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Comprovant...';
+
+    try {
+      const unameRef = window.fbDocRef('usernames/' + val);
+      const existing = await window.fbGetDoc(unameRef);
+      if (existing.exists()) {
+        errorEl.textContent = 'Aquest nom d\'usuari ja existeix. Tria un altre.';
+        errorEl.classList.add('show');
+        btn.disabled = false;
+        btn.textContent = 'Confirmar';
+        return;
+      }
+
+      await window.fbSetDoc(unameRef, { uid: fbUser.uid });
+
+      state.username = val;
+      save();
+
+      document.getElementById('modal-root').innerHTML = '';
+    } catch (err) {
+      console.error('Username error', err);
+      errorEl.textContent = 'Error desant el nom d\'usuari. Torna-ho a provar.';
+      errorEl.classList.add('show');
+      btn.disabled = false;
+      btn.textContent = 'Confirmar';
+    }
+  };
+
   window.doSignIn = async function() {
     if (!window.firebaseReady) {
       showAuthError('Esperant Firebase... torna-ho a provar en un moment.');
@@ -2443,6 +2571,24 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
   }
 
   // Quan el state local canvia i estem logged in, escrivim al nᅵvol amb debounce
+  // Calcula i puja a profiles/{uid} les estadistiques visibles pels amics
+  async function syncProfile() {
+    if (!fbUser || !state.username) return;
+    try {
+      const ref = window.fbDocRef('profiles/' + fbUser.uid);
+      await window.fbSetDoc(ref, {
+        username: state.username,
+        displayName: fbUser.displayName || '',
+        photoURL: fbUser.photoURL || '',
+        stats: computeProfileStats(),
+        updatedAt: Date.now()
+      });
+    } catch (err) {
+      console.error('Profile sync failed', err);
+    }
+  }
+
+  // Quan el state local canvia i estem logged in, escrivim al núvol amb debounce
   function scheduleCloudSave() {
     if (!fbUser) return;
     if (pendingCloudSave) clearTimeout(pendingCloudSave);
@@ -2455,8 +2601,10 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
           events: state.events || [],
           career: state.career || null,
           userName: state.userName || '',
+          username: state.username || '',
           updatedAt: Date.now()
         });
+        await syncProfile();
       } catch (err) {
         console.error('Cloud save failed', err);
       }
@@ -2497,6 +2645,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
             state.events = cloud.events || [];
             state.career = cloud.career !== undefined ? cloud.career : null;
             state.userName = cloud.userName || '';
+            state.username = cloud.username || '';
             _origSave();
           } else {
             // Pujar les locals
@@ -2508,6 +2657,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
           state.events = cloud.events || [];
           state.career = cloud.career !== undefined ? cloud.career : null;
           state.userName = cloud.userName || '';
+          state.username = cloud.username || '';
           _origSave();
         }
       } else {
@@ -2526,6 +2676,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       render();
       if (activePage === 'stats') renderStats();
       if (activePage === 'calendar') renderCalendar();
+      if (!state.username) openUsernameModal();
     }
   }
 
