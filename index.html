@@ -469,6 +469,11 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
 .stats-toggle-btn:hover { color: var(--text-primary); }
 .stats-toggle-btn.active { background: var(--accent); color: #fff; }
 
+.app-footer { text-align: center; padding: 32px 0 16px; font-size: 12px; color: var(--text-tertiary); }
+.app-footer a { color: var(--text-tertiary); text-decoration: none; font-weight: 600; transition: color 0.15s; }
+.app-footer a:hover { color: var(--accent); }
+.app-footer .sep { margin: 0 8px; opacity: 0.4; }
+
 @media (max-width: 900px) {
   .span-3, .span-4, .span-5, .span-6, .span-7, .span-8 { grid-column: span 12; }
   .calendar-layout { grid-template-columns: 1fr; }
@@ -564,7 +569,10 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
   <div id="calendar-view" style="display:none;">
     <div id="calendar-content"></div>
   </div>
-  <div id="modal-root"></div>
+ <div id="modal-root"></div>
+  <footer class="app-footer">
+    FiberCalc <span class="sep">·</span> <a href="/privacitat.html" target="_blank">Privacitat</a>
+  </footer>
 </div>
 <script>
 (function() {
