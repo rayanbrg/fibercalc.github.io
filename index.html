@@ -2321,6 +2321,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
   let fbUser = null;        // objecte d'usuari actual (null = no logged in)
   let syncing = false;       // si s'esta sincronitzant
   let pendingCloudSave = null; // timeout per evitar massa escriptures
+  let freshSignIn = false;
 
   function isLoggedIn() { return fbUser !== null; }
 
@@ -2359,6 +2360,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       return;
     }
     try {
+      freshSignIn = true;
       await window.fbSignInPopup();
       closeAuthModal();
     } catch (err) {
@@ -2481,7 +2483,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       if (snap.exists()) {
         const cloud = snap.data();
         // Hi ha dades al nᅵvol: tens dades locals?
-        const hasLocal = state.subjects && state.subjects.length > 0;
+        const hasLocal = freshSignIn && state.subjects && state.subjects.length > 0;
         if (hasLocal) {
           // Conflicte: preguntar
           const choice = confirm(
@@ -2516,6 +2518,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       console.error('Sync error', err);
     } finally {
       syncing = false;
+      freshSignIn = false;
       // Re-renderitzar amb les noves dades
       renderCareerTag();
       updateGreeting();
