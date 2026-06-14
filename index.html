@@ -6,15 +6,6 @@
 <title>FiberCalc</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
-  <link rel="icon" type="image/jpeg" href="logo-fibercalc.png">
-  <link rel="apple-touch-icon" href="logo-fibercalc.png">
-  <!-- Google Tag Manager -->
-<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-58J6BCJ3');</script>
-<!-- End Google Tag Manager -->
 <style>
 * { box-sizing: border-box; }
 :root {
@@ -84,6 +75,36 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
 .icon-action:hover { background: rgba(255,255,255,0.28); }
 .icon-action.active { background: #FFFFFF; color: var(--accent-dark); border-color: #FFFFFF; }
 .icon-action:active { transform: scale(0.95); }
+.user-btn { background: rgba(255,255,255,0.18); color: #FFFFFF; border: 1px solid rgba(255,255,255,0.25); border-radius: var(--radius-md); padding: 6px 10px 6px 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; font-family: inherit; transition: background 0.15s; backdrop-filter: blur(8px); }
+.user-btn:hover { background: rgba(255,255,255,0.28); }
+.user-btn img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+.user-btn-fallback { width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.3); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+.user-menu { position: absolute; top: 100%; right: 0; margin-top: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-hover); min-width: 240px; padding: 6px; display: none; z-index: 50; }
+.user-menu.open { display: block; animation: fadeIn 0.15s ease; }
+.user-menu-header { padding: 12px 14px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+.user-menu-name { font-size: 13.5px; font-weight: 600; color: var(--text-primary); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-menu-email { font-size: 12px; color: var(--text-tertiary); margin: 2px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-menu-status { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; font-size: 11px; color: var(--accent); font-weight: 600; }
+.user-menu-status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.user-menu-item { background: transparent; border: none; width: 100%; text-align: left; padding: 9px 12px; font-size: 13px; color: var(--text-primary); cursor: pointer; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 8px; font-family: inherit; transition: background 0.12s; }
+.user-menu-item:hover { background: var(--bg); }
+.user-menu-item i { font-size: 15px; color: var(--text-secondary); }
+.user-menu-item.danger { color: #EF4444; }
+.user-menu-item.danger i { color: #EF4444; }
+.user-wrap { position: relative; }
+.sync-indicator { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); opacity: 0; transition: opacity 0.3s; }
+.sync-indicator.active { opacity: 1; }
+.sync-indicator.syncing { background: #F59E0B; animation: pulse 1s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+.auth-modal-content { display: flex; flex-direction: column; gap: 14px; padding: 8px 4px; align-items: center; text-align: center; }
+.auth-modal-content img.brand { height: 56px; width: 56px; object-fit: contain; border-radius: 12px; }
+.auth-modal-content h3 { margin: 4px 0 0; font-size: 19px; }
+.auth-modal-content p { margin: 0; font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; max-width: 360px; }
+.btn-google { background: #FFFFFF; color: #1F1F1F; border: 1px solid #DADCE0; border-radius: 999px; padding: 10px 22px 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; font-family: inherit; transition: background 0.15s, box-shadow 0.15s; }
+.btn-google:hover { background: #F4F5F8; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+.btn-google svg { width: 18px; height: 18px; }
+.auth-error { font-size: 12px; color: #EF4444; background: var(--fail-bg); padding: 8px 12px; border-radius: var(--radius-sm); display: none; }
+.auth-error.show { display: block; }
 .header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 1.5rem; gap: 12px; flex-wrap: wrap; }
 .title { font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.02em; }
 .subtitle { font-size: 14px; color: var(--text-secondary); margin: 6px 0 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -461,12 +482,42 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
   .brand-logo { height: 38px; width: 38px; }
 }
 </style>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCMuNnxtjnwm1w802GOZmdfusO9y0UvWeM",
+    authDomain: "fiber-calc-14.firebaseapp.com",
+    projectId: "fiber-calc-14",
+    storageBucket: "fiber-calc-14.firebasestorage.app",
+    messagingSenderId: "8460558659",
+    appId: "1:8460558659:web:02ba0268b9fa97a174cff6"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const fbAuth = getAuth(fbApp);
+  const fbDb = getFirestore(fbApp);
+  const fbProvider = new GoogleAuthProvider();
+
+  // Exposem el que necessitem al window perqu el JS principal ho usi
+  window.fbAuth = fbAuth;
+  window.fbDb = fbDb;
+  window.fbProvider = fbProvider;
+  window.fbSignInPopup = () => signInWithPopup(fbAuth, fbProvider);
+  window.fbSignOut = () => signOut(fbAuth);
+  window.fbOnAuth = (cb) => onAuthStateChanged(fbAuth, cb);
+  window.fbDocRef = (path) => doc(fbDb, ...path.split('/'));
+  window.fbGetDoc = (ref) => getDoc(ref);
+  window.fbSetDoc = (ref, data) => setDoc(ref, data);
+
+  // Marca que firebase ja est llest perqu el JS principal sap quan inicialitzar
+  window.firebaseReady = true;
+  window.dispatchEvent(new Event('firebase-ready'));
+</script>
 </head>
 <body>
-  <!-- Google Tag Manager (noscript) -->
-<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-58J6BCJ3"
-height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-<!-- End Google Tag Manager (noscript) -->
 <div class="container">
   <div class="topbar">
     <div class="brand">
@@ -474,6 +525,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <h1 class="brand-name">Fiber<span class="accent">calc</span></h1>
     </div>
     <div class="topbar-actions">
+      <div class="user-wrap" id="user-wrap">
+        <button class="icon-action" id="login-btn" onclick="openAuthModal()" aria-label="Iniciar sessió" title="Iniciar sessió"><i class="ti ti-user"></i></button>
+        <button class="user-btn" id="user-btn" onclick="toggleUserMenu()" style="display:none;">
+          <span id="user-avatar"></span>
+          <span id="user-shortname"></span>
+        </button>
+        <div class="user-menu" id="user-menu"></div>
+      </div>
       <button class="icon-action" id="reorder-btn" onclick="toggleReorder()" aria-label="Reordenar"><i class="ti ti-arrows-sort"></i></button>
       <button class="icon-action" onclick="toggleTheme()" aria-label="Canviar tema"><i class="ti ti-moon" id="theme-icon"></i></button>
       <button class="btn-add" onclick="openModal()"><i class="ti ti-plus"></i>Nova assignatura</button>
@@ -2250,6 +2309,223 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     root.innerHTML = html;
   }
 
+  // ========= FIREBASE: AUTH + SYNC =========
+  let fbUser = null;        // objecte d'usuari actual (null = no logged in)
+  let syncing = false;       // si s'esta sincronitzant
+  let pendingCloudSave = null; // timeout per evitar massa escriptures
+
+  function isLoggedIn() { return fbUser !== null; }
+
+  function showAuthError(msg) {
+    const el = document.getElementById('auth-error');
+    if (el) { el.textContent = msg; el.classList.add('show'); }
+  }
+
+  window.openAuthModal = function() {
+    const root = document.getElementById('modal-root');
+    root.innerHTML =
+      '<div class="modal-bg" onclick="if(event.target===this)closeAuthModal()">' +
+        '<div class="modal" style="max-width:380px;">' +
+          '<div class="auth-modal-content">' +
+            '<img class="brand" src="' + document.getElementById('brand-logo').src + '" alt="FiberCalc" />' +
+            '<h3>Inicia sessió a FiberCalc</h3>' +
+            '<p>Sincronitza les teves notes entre dispositius. Les teves dades actuals es desaran al teu compte la primera vegada.</p>' +
+            '<button class="btn-google" onclick="doSignIn()">' +
+              '<svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/><path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>' +
+              'Continuar amb Google' +
+            '</button>' +
+            '<div class="auth-error" id="auth-error"></div>' +
+            '<button class="btn-ghost" onclick="closeAuthModal()" style="margin-top:4px;">Cancel·lar</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  };
+
+  window.closeAuthModal = function() {
+    document.getElementById('modal-root').innerHTML = '';
+  };
+
+  window.doSignIn = async function() {
+    if (!window.firebaseReady) {
+      showAuthError('Esperant Firebase... torna-ho a provar en un moment.');
+      return;
+    }
+    try {
+      await window.fbSignInPopup();
+      closeAuthModal();
+    } catch (err) {
+      console.error('Login error', err);
+      let msg = 'Error en iniciar sessió.';
+      if (err && err.code === 'auth/popup-closed-by-user') msg = 'Has tancat la finestra de Google.';
+      else if (err && err.code === 'auth/popup-blocked') msg = 'El navegador ha bloquejat la finestra emergent.';
+      else if (err && err.code === 'auth/unauthorized-domain') msg = 'Aquest domini no està autoritzat. Revisa la configuració de Firebase.';
+      showAuthError(msg);
+    }
+  };
+
+  window.doSignOut = async function() {
+    if (!confirm('Tancar sessió? Les dades es continuaran veient des d\'aquest dispositiu.')) return;
+    closeUserMenu();
+    try { await window.fbSignOut(); } catch (e) { console.error(e); }
+  };
+
+  function userInitials(name, email) {
+    if (name) {
+      const parts = name.trim().split(/\s+/);
+      if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+      return name.slice(0, 2).toUpperCase();
+    }
+    if (email) return email.slice(0, 2).toUpperCase();
+    return '?';
+  }
+
+  function updateUserUI() {
+    const loginBtn = document.getElementById('login-btn');
+    const userBtn = document.getElementById('user-btn');
+    const avatar = document.getElementById('user-avatar');
+    const shortname = document.getElementById('user-shortname');
+
+    if (fbUser) {
+      loginBtn.style.display = 'none';
+      userBtn.style.display = 'inline-flex';
+      const dispName = fbUser.displayName || fbUser.email || '';
+      const firstName = (dispName.split(/\s+/)[0] || 'Compte');
+      shortname.textContent = firstName;
+      if (fbUser.photoURL) {
+        avatar.innerHTML = '<img src="' + fbUser.photoURL + '" alt="" referrerpolicy="no-referrer" />';
+      } else {
+        avatar.innerHTML = '<span class="user-btn-fallback">' + userInitials(fbUser.displayName, fbUser.email) + '</span>';
+      }
+    } else {
+      loginBtn.style.display = '';
+      userBtn.style.display = 'none';
+    }
+  }
+
+  window.toggleUserMenu = function() {
+    const menu = document.getElementById('user-menu');
+    if (menu.classList.contains('open')) { closeUserMenu(); return; }
+    if (!fbUser) return;
+    const name = fbUser.displayName || 'Usuari';
+    const email = fbUser.email || '';
+    menu.innerHTML =
+      '<div class="user-menu-header">' +
+        '<div class="user-menu-name">' + escapeHtml(name) + '</div>' +
+        '<div class="user-menu-email">' + escapeHtml(email) + '</div>' +
+        '<div class="user-menu-status">Sincronitzat</div>' +
+      '</div>' +
+      '<button class="user-menu-item danger" onclick="doSignOut()"><i class="ti ti-logout"></i>Tancar sessió</button>';
+    menu.classList.add('open');
+    setTimeout(() => {
+      document.addEventListener('click', closeUserMenuOnOutside, { once: true });
+    }, 0);
+  };
+
+  function closeUserMenu() {
+    const menu = document.getElementById('user-menu');
+    if (menu) menu.classList.remove('open');
+  }
+
+  function closeUserMenuOnOutside(e) {
+    const wrap = document.getElementById('user-wrap');
+    if (wrap && !wrap.contains(e.target)) closeUserMenu();
+    else setTimeout(() => document.addEventListener('click', closeUserMenuOnOutside, { once: true }), 0);
+  }
+
+  // Quan el state local canvia i estem logged in, escrivim al nᅵvol amb debounce
+  function scheduleCloudSave() {
+    if (!fbUser) return;
+    if (pendingCloudSave) clearTimeout(pendingCloudSave);
+    pendingCloudSave = setTimeout(async () => {
+      try {
+        const ref = window.fbDocRef('users/' + fbUser.uid);
+        // Guardem un snapshot del state actual
+        await window.fbSetDoc(ref, {
+          subjects: state.subjects || [],
+          events: state.events || [],
+          career: state.career || null,
+          userName: state.userName || '',
+          updatedAt: Date.now()
+        });
+      } catch (err) {
+        console.error('Cloud save failed', err);
+      }
+      pendingCloudSave = null;
+    }, 1200);
+  }
+
+  // Sobreescrivim save() per encadenar tambᅵ cloud
+  const _origSave = save;
+  save = function() {
+    _origSave();
+    scheduleCloudSave();
+  };
+
+  async function handleAuthChanged(user) {
+    fbUser = user;
+    updateUserUI();
+    if (!user) return;
+    // Just s'ha fet login: comprovar si hi ha dades al nᅵvol
+    syncing = true;
+    try {
+      const ref = window.fbDocRef('users/' + user.uid);
+      const snap = await window.fbGetDoc(ref);
+      if (snap.exists()) {
+        const cloud = snap.data();
+        // Hi ha dades al nᅵvol: tens dades locals?
+        const hasLocal = state.subjects && state.subjects.length > 0;
+        if (hasLocal) {
+          // Conflicte: preguntar
+          const choice = confirm(
+            'Aquest compte ja té dades guardades al núvol.\n\n' +
+            'Acceptar = usar les dades del núvol (es perdran les locals d\'aquest dispositiu).\n' +
+            'Cancel·lar = pujar les dades locals al núvol (es perdran les del núvol).'
+          );
+          if (choice) {
+            // Carregar del nᅵvol
+            state.subjects = cloud.subjects || [];
+            state.events = cloud.events || [];
+            state.career = cloud.career !== undefined ? cloud.career : null;
+            state.userName = cloud.userName || '';
+            _origSave();
+          } else {
+            // Pujar les locals
+            scheduleCloudSave();
+          }
+        } else {
+          // No hi ha locals: carregar del nᅵvol
+          state.subjects = cloud.subjects || [];
+          state.events = cloud.events || [];
+          state.career = cloud.career !== undefined ? cloud.career : null;
+          state.userName = cloud.userName || '';
+          _origSave();
+        }
+      } else {
+        // No hi ha res al nᅵvol: pujar les dades locals
+        scheduleCloudSave();
+      }
+    } catch (err) {
+      console.error('Sync error', err);
+    } finally {
+      syncing = false;
+      // Re-renderitzar amb les noves dades
+      renderCareerTag();
+      updateGreeting();
+      renderFilters();
+      render();
+      if (activePage === 'stats') renderStats();
+      if (activePage === 'calendar') renderCalendar();
+    }
+  }
+
+  function initFirebaseFlow() {
+    if (!window.firebaseReady) {
+      window.addEventListener('firebase-ready', initFirebaseFlow, { once: true });
+      return;
+    }
+    window.fbOnAuth(handleAuthChanged);
+  }
+
   loadTheme();
   load();
   setLogo();
@@ -2257,6 +2533,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   updateGreeting();
   renderFilters();
   render();
+  initFirebaseFlow();
 })();
 </script>
 </body>
