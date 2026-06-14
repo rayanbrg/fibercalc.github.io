@@ -489,6 +489,10 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
 .friend-status-badge { font-size: 12px; font-weight: 600; color: var(--text-secondary); background: var(--bg); padding: 6px 12px; border-radius: 999px; white-space: nowrap; }
 .friends-empty { text-align: center; padding: 3rem 2rem; color: var(--text-secondary); font-size: 14px; background: var(--surface); border-radius: var(--radius-lg); border: 1px dashed var(--border-strong); }
 .friends-empty i { font-size: 32px; color: var(--text-tertiary); display: block; margin-bottom: 12px; }
+.rank-you-badge { font-size: 10px; font-weight: 700; color: var(--accent-dark); background: var(--accent-soft); padding: 2px 7px; border-radius: 999px; margin-left: 6px; vertical-align: middle; text-transform: uppercase; letter-spacing: 0.04em; }
+[data-theme="dark"] .rank-you-badge { color: #6EE7B7; }
+.friend-quatri-select { height: 40px; font-size: 14px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--text-primary); font-family: inherit; outline: none; cursor: pointer; }
+.friend-quatri-select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
 
 .app-footer { text-align: center; padding: 32px 0 16px; font-size: 12px; color: var(--text-tertiary); }
 .app-footer a { color: var(--text-tertiary); text-decoration: none; font-weight: 600; transition: color 0.15s; }
@@ -658,6 +662,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     return d.getDate() + ' ' + ['gen','feb','mar','abr','mai','jun','jul','ago','set','oct','nov','des'][d.getMonth()] + ' ' + d.getFullYear();
   }
   let activeStatsScope = 'all'; // 'all' o 'passed'
+  let friendRankingCache = []; // ultim rankin calculat (per la comparativa per quatris)
   let state = { subjects: [] };
   let editingId = null;
   let draft = null;
@@ -2742,6 +2747,42 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     '</div>';
   }
 
+  function renderRankingRow(profile, statsObj, index, isMe) {
+    const fmtEcts = n => { const r = Math.round((n || 0) * 10) / 10; return r % 1 === 0 ? String(r) : r.toFixed(1); };
+    const avgAll = statsObj && statsObj.avgAll !== null && statsObj.avgAll !== undefined ? statsObj.avgAll : null;
+    const avgPassed = statsObj && statsObj.avgPassed !== null && statsObj.avgPassed !== undefined ? statsObj.avgPassed : null;
+    const ectsApproved = statsObj ? (statsObj.ectsApproved || 0) : 0;
+    const ectsTotal = statsObj ? (statsObj.ectsTotal || 0) : 0;
+    const rankCls = index === 0 ? 'first' : (index === 1 ? 'second' : (index === 2 ? 'third' : ''));
+    const gradeCls = avgAll === null ? '' : (avgAll >= 5 ? 'pass' : 'fail');
+    const name = escapeHtml(profile.displayName || profile.username || '?');
+    const youBadge = isMe ? ' <span class="rank-you-badge">Tu</span>' : '';
+    return '<div class="top-item">' +
+      '<div class="top-rank ' + rankCls + '">' + (index + 1) + '</div>' +
+      '<div><div class="top-name">' + name + youBadge + '</div>' +
+      '<div class="top-meta">Aprov. ' + fmtEcts(ectsApproved) + '/' + fmtEcts(ectsTotal) + ' ECTS · Mitjana aprov. ' + (avgPassed !== null ? fmt(avgPassed) : '—') + '</div></div>' +
+      '<div class="top-grade ' + gradeCls + '">' + (avgAll !== null ? fmt(avgAll) : '—') + '</div>' +
+    '</div>';
+  }
+
+  window.renderQuatriComparison = function() {
+    const sel = document.getElementById('friend-quatri-select');
+    const out = document.getElementById('quatri-comparison');
+    if (!sel || !out) return;
+    const quatri = sel.value;
+    const filtered = friendRankingCache.filter(it => it.stats && it.stats.byQuatri && it.stats.byQuatri[quatri]);
+    if (filtered.length === 0) {
+      out.innerHTML = '<div class="friends-empty">Cap amic té dades d\'aquest quatrimestre.</div>';
+      return;
+    }
+    const sorted = [...filtered].sort((a, b) => {
+      const av = a.stats.byQuatri[quatri].avgAll !== null && a.stats.byQuatri[quatri].avgAll !== undefined ? a.stats.byQuatri[quatri].avgAll : -1;
+      const bv = b.stats.byQuatri[quatri].avgAll !== null && b.stats.byQuatri[quatri].avgAll !== undefined ? b.stats.byQuatri[quatri].avgAll : -1;
+      return bv - av;
+    });
+    out.innerHTML = '<div class="top-list">' + sorted.map((it, i) => renderRankingRow(it.profile, it.stats.byQuatri[quatri], i, it.isMe)).join('') + '</div>';
+  };
+
   async function sendFriendRequest(targetUid) {
     const myUid = fbUser.uid;
     const id = pairId(myUid, targetUid);
@@ -2927,6 +2968,36 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       if (friends.length === 0) {
         html += '<div class="friends-empty">Encara no tens amics. Cerca\'n un pel seu nom d\'usuari!</div>';
       } else {
+        const myStats = computeProfileStats();
+        const myProfile = { displayName: state.userName || fbUser.displayName || 'Tu', username: state.username, photoURL: fbUser.photoURL || '' };
+
+        const items = [{ profile: myProfile, stats: myStats, isMe: true, otherUid: null }];
+        await Promise.all(friends.map(async item => {
+          let stats = null;
+          try {
+            const statsSnap = await window.fbGetDoc(window.fbDocRef('profiles/' + item.otherUid + '/private/stats'));
+            stats = statsSnap.exists() ? statsSnap.data().stats : null;
+          } catch (e) { console.error(e); }
+          items.push({ profile: profiles[item.otherUid], stats, isMe: false, otherUid: item.otherUid });
+        }));
+
+        friendRankingCache = items;
+
+        const sortKey = it => (it.stats && it.stats.avgAll !== null && it.stats.avgAll !== undefined) ? it.stats.avgAll : -1;
+        const sorted = [...items].sort((a, b) => sortKey(b) - sortKey(a));
+
+        html += '<div class="top-list">' + sorted.map((it, i) => renderRankingRow(it.profile, it.stats, i, it.isMe)).join('') + '</div>';
+
+        const myQuatris = Object.keys(myStats.byQuatri || {}).sort((a, b) => QUATRIS.indexOf(b) - QUATRIS.indexOf(a));
+        if (myQuatris.length > 0) {
+          html += '<div class="friends-section-title" style="margin-top:20px;"><i class="ti ti-calendar-stats"></i>Comparativa per quatrimestre</div>' +
+            '<select id="friend-quatri-select" class="friend-quatri-select" onchange="renderQuatriComparison()">' +
+            myQuatris.map(q => '<option value="' + q + '">' + q + '</option>').join('') +
+            '</select>' +
+            '<div id="quatri-comparison" style="margin-top:10px;"></div>';
+        }
+
+        html += '<div class="friends-section-title" style="margin-top:20px;"><i class="ti ti-settings"></i>Gestionar amics</div>';
         html += '<div class="friend-list">' +
           friends.map(item => renderFriendCard(profiles[item.otherUid],
             '<button class="btn" onclick="removeFriend(\'' + item.otherUid + '\')">Eliminar</button>'
@@ -2935,6 +3006,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       }
 
       container.innerHTML = html;
+      if (document.getElementById('friend-quatri-select')) renderQuatriComparison();
     } catch (err) {
       console.error(err);
       container.innerHTML = '<div class="friends-empty">Error carregant els amics.</div>';
