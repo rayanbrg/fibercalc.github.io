@@ -2604,7 +2604,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
         (state.username ? '<div class="user-menu-username">@' + escapeHtml(state.username) + '</div>' : '') +
         '<div class="user-menu-status">Sincronitzat</div>' +
       '</div>' +
-      '<button class="user-menu-item" onclick="closeUserMenu();openUsernameModal(true)"><i class="ti ti-at"></i>Canviar nom d\'usuari</button>' +
+      '<button class="user-menu-item" onclick="openUsernameModal(true)"><i class="ti ti-at"></i>Canviar nom d\'usuari</button>' +
       '<button class="user-menu-item danger" onclick="doSignOut()"><i class="ti ti-logout"></i>Tancar sessió</button>';
     menu.classList.add('open');
     setTimeout(() => {
