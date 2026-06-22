@@ -492,6 +492,65 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
 .friends-empty { text-align: center; padding: 3rem 2rem; color: var(--text-secondary); font-size: 14px; background: var(--surface); border-radius: var(--radius-lg); border: 1px dashed var(--border-strong); }
 .friends-empty i { font-size: 32px; color: var(--text-tertiary); display: block; margin-bottom: 12px; }
 .rank-you-badge { font-size: 10px; font-weight: 700; color: var(--accent-dark); background: var(--accent-soft); padding: 2px 7px; border-radius: 999px; margin-left: 6px; vertical-align: middle; text-transform: uppercase; letter-spacing: 0.04em; }
+.position-banner { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; padding: 14px 18px; border-radius: var(--radius-md); display: flex; align-items: center; gap: 10px; margin-bottom: 16px; box-shadow: 0 4px 14px rgba(14,187,128,0.25); animation: slideUp 0.4s ease; }
+.position-banner.demote { background: linear-gradient(135deg, #6E7280, #4B5563); box-shadow: 0 4px 14px rgba(75,85,99,0.25); }
+.position-banner.promote-top { background: linear-gradient(135deg, #FFD700, #FFA500); color: #1A1A1A; box-shadow: 0 4px 14px rgba(255,165,0,0.35); }
+.position-banner i { font-size: 22px; flex-shrink: 0; }
+.position-banner-text { flex: 1; }
+.position-banner-title { font-weight: 700; font-size: 14px; line-height: 1.2; }
+.position-banner-sub { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+.position-banner-close { background: rgba(255,255,255,0.2); border: none; color: inherit; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
+.position-banner-close:hover { background: rgba(255,255,255,0.35); }
+
+.activity-feed { display: flex; flex-direction: column; gap: 8px; }
+.activity-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); animation: fadeIn 0.3s ease; }
+.activity-icon { width: 36px; height: 36px; border-radius: 50%; background: var(--accent-soft); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.activity-icon i { font-size: 18px; color: var(--accent); }
+.activity-icon.approve { background: rgba(14,187,128,0.15); }
+.activity-icon.approve i { color: var(--accent); }
+.activity-icon.milestone { background: rgba(255,165,0,0.15); }
+.activity-icon.milestone i { color: #F59E0B; }
+.activity-text { flex: 1; min-width: 0; font-size: 13.5px; color: var(--text-primary); }
+.activity-text strong { font-weight: 600; }
+.activity-time { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+
+.avatar-rank-ring { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--avatar-ring, var(--border-strong)); }
+.sparkline { display: inline-block; vertical-align: middle; margin-left: 8px; flex-shrink: 0; }
+.sparkline path { stroke-width: 1.5; fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.sparkline circle { fill: currentColor; }
+.top-item { gap: 10px; }
+.top-item-content { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
+.top-item-avatar { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--accent-soft); position: relative; }
+.top-item-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.top-item-avatar-fallback { font-size: 12px; font-weight: 700; color: var(--accent-dark); }
+[data-theme="dark"] .top-item-avatar-fallback { color: #6EE7B7; }
+.top-item-info { min-width: 0; flex: 1; }
+
+.star-quatri-block { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.star-quatri-card { padding: 14px; border-radius: var(--radius-md); background: var(--bg); display: flex; flex-direction: column; gap: 4px; }
+.star-quatri-card.best { background: linear-gradient(135deg, rgba(14,187,128,0.15), rgba(14,187,128,0.05)); border: 1px solid rgba(14,187,128,0.25); }
+.star-quatri-card.worst { background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(239,68,68,0.03)); border: 1px solid rgba(239,68,68,0.2); }
+.star-quatri-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-tertiary); display: inline-flex; align-items: center; gap: 4px; }
+.star-quatri-card.best .star-quatri-label { color: var(--accent-dark); }
+[data-theme="dark"] .star-quatri-card.best .star-quatri-label { color: #6EE7B7; }
+.star-quatri-card.worst .star-quatri-label { color: #EF4444; }
+.star-quatri-name { font-size: 16px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.star-quatri-grade { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+.star-quatri-card.best .star-quatri-grade { color: var(--accent); }
+.star-quatri-card.worst .star-quatri-grade { color: #EF4444; }
+.star-quatri-meta { font-size: 11px; color: var(--text-tertiary); }
+
+.delta-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; vertical-align: middle; margin-left: 6px; font-variant-numeric: tabular-nums; }
+.delta-badge.up { background: rgba(14,187,128,0.15); color: var(--accent-dark); }
+[data-theme="dark"] .delta-badge.up { color: #6EE7B7; }
+.delta-badge.down { background: rgba(239,68,68,0.15); color: #DC2626; }
+[data-theme="dark"] .delta-badge.down { color: #FCA5A5; }
+.delta-badge.same { background: var(--bg); color: var(--text-tertiary); }
+
+.compare-chart-wrap { padding: 16px 0 8px; height: 220px; position: relative; }
+.compare-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; font-size: 12px; }
+.compare-legend-item { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+.compare-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 [data-theme="dark"] .rank-you-badge { color: #6EE7B7; }
 .friend-quatri-select { height: 40px; font-size: 14px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--text-primary); font-family: inherit; outline: none; cursor: pointer; }
 .friend-quatri-select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
@@ -512,7 +571,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc, deleteDoc, addDoc, collection, query, where, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCMuNnxtjnwm1w802GOZmdfusO9y0UvWeM",
@@ -543,6 +602,9 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
   window.fbQuery = (colRef, ...constraints) => query(colRef, ...constraints);
   window.fbWhere = where;
   window.fbGetDocs = (q) => getDocs(q);
+  window.fbAddDoc = (colRef, data) => addDoc(colRef, data);
+  window.fbOrderBy = orderBy;
+  window.fbLimit = limit;
 
   // Marca que firebase ja est llest perqu el JS principal sap quan inicialitzar
   window.firebaseReady = true;
@@ -1240,10 +1302,35 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     const avgClass = avg === null ? '' : (avg >= 5 ? ' accent-pass' : ' accent-fail');
     const fmtEcts = (n) => { const r = Math.round(n * 10) / 10; return r % 1 === 0 ? String(r) : r.toFixed(1); };
 
+    // Comparativa amb quatri anterior (nomes si filtre = quatri especific)
+    let deltaHtml = '';
+    if (activeFilter !== 'ALL' && avg !== null) {
+      const qIdx = QUATRIS.indexOf(activeFilter);
+      if (qIdx >= 0 && qIdx < QUATRIS.length - 1) {
+        const prevQuatri = QUATRIS[qIdx + 1];
+        const prevSubjects = state.subjects.filter(s => s.quatri === prevQuatri);
+        const prevGrades = [];
+        prevSubjects.forEach(s => {
+          const g = calcGrade(s);
+          const st = getStatus(s);
+          if (g !== null && st.final) prevGrades.push(g);
+        });
+        if (prevGrades.length > 0) {
+          const prevAvg = prevGrades.reduce((a,b)=>a+b,0) / prevGrades.length;
+          const diff = avg - prevAvg;
+          let cls, icon, sign;
+          if (Math.abs(diff) < 0.05) { cls = 'same'; icon = 'ti-minus'; sign = ''; }
+          else if (diff > 0) { cls = 'up'; icon = 'ti-trending-up'; sign = '+'; }
+          else { cls = 'down'; icon = 'ti-trending-down'; sign = ''; }
+          deltaHtml = '<span class="delta-badge ' + cls + '" title="vs ' + escapeHtml(prevQuatri) + '"><i class="ti ' + icon + '"></i>' + sign + fmt(diff) + '</span>';
+        }
+      }
+    }
+
     let cards = '';
     cards += '<div class="metric-card' + avgClass + '">' +
         '<div class="metric-label"><i class="ti ti-chart-line"></i>Mitjana</div>' +
-        '<div class="metric-value">' + avgText + '</div>' +
+        '<div class="metric-value">' + avgText + deltaHtml + '</div>' +
         '<div class="metric-subvalue">' + grades.length + ' finalitzades</div>' +
       '</div>';
     cards += '<div class="metric-card accent-pass">' +
@@ -2219,6 +2306,33 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
 
     // 6. Mitjana per quatri (nomes si activeFilter == ALL)
     if (showByQuatri && quatriData.length > 0) {
+      // Quatri estrella i pitjor
+      const validQuatris = quatriData.filter(q => q.avg !== null);
+      if (validQuatris.length >= 2) {
+        const best = validQuatris.reduce((a, b) => (b.avg > a.avg ? b : a));
+        const worst = validQuatris.reduce((a, b) => (b.avg < a.avg ? b : a));
+        const fmtEcts = n => { const r = Math.round((n || 0) * 10) / 10; return r % 1 === 0 ? String(r) : r.toFixed(1); };
+        html += '<div class="stat-block span-6">' +
+          '<div class="stat-block-header">' +
+            '<h3 class="stat-block-title"><i class="ti ti-star"></i>Quatri estrella i pitjor quatri</h3>' +
+          '</div>' +
+          '<div class="star-quatri-block">' +
+            '<div class="star-quatri-card best">' +
+              '<div class="star-quatri-label"><i class="ti ti-trophy"></i>Estrella</div>' +
+              '<div class="star-quatri-name">' + escapeHtml(best.quatri) + '</div>' +
+              '<div class="star-quatri-grade">' + fmt(best.avg) + '</div>' +
+              '<div class="star-quatri-meta">' + fmtEcts(best.passedEcts) + ' / ' + fmtEcts(best.ects) + ' ECTS aprovats</div>' +
+            '</div>' +
+            '<div class="star-quatri-card worst">' +
+              '<div class="star-quatri-label"><i class="ti ti-trending-down"></i>Pitjor</div>' +
+              '<div class="star-quatri-name">' + escapeHtml(worst.quatri) + '</div>' +
+              '<div class="star-quatri-grade">' + fmt(worst.avg) + '</div>' +
+              '<div class="star-quatri-meta">' + fmtEcts(worst.passedEcts) + ' / ' + fmtEcts(worst.ects) + ' ECTS aprovats</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }
+
       const maxAvg = Math.max(...quatriData.map(q => q.avg || 0), 10);
       html += '<div class="stat-block span-6">' +
         '<div class="stat-block-header">' +
@@ -2604,7 +2718,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
         (state.username ? '<div class="user-menu-username">@' + escapeHtml(state.username) + '</div>' : '') +
         '<div class="user-menu-status">Sincronitzat</div>' +
       '</div>' +
-      '<button class="user-menu-item" onclick="openUsernameModal(true)"><i class="ti ti-at"></i>Canviar nom d\'usuari</button>' +
+      '<button class="user-menu-item" onclick="closeUserMenu();openUsernameModal(true)"><i class="ti ti-at"></i>Canviar nom d\'usuari</button>' +
       '<button class="user-menu-item danger" onclick="doSignOut()"><i class="ti ti-logout"></i>Tancar sessió</button>';
     menu.classList.add('open');
     setTimeout(() => {
@@ -2724,6 +2838,8 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
         // No hi ha res al nᅵvol: pujar les dades locals
         scheduleCloudSave();
       }
+      // Inicialitzar el snapshot d'aprovades actual perque les properes detectades siguin noves
+      cloudPassedSnapshot = buildPassedSnapshot();
     } catch (err) {
       console.error('Sync error', err);
     } finally {
@@ -2760,6 +2876,37 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     '</div>';
   }
 
+  function avgToRingColor(avg) {
+    if (avg === null || avg === undefined) return '#9CA3AE';
+    if (avg < 5) return '#EF4444';
+    if (avg < 6.5) return '#F59E0B';
+    if (avg < 8) return '#0EBB80';
+    return '#FFD700';
+  }
+
+  function buildSparklineSVG(stats, color) {
+    if (!stats || !stats.byQuatri) return '';
+    const qs = Object.keys(stats.byQuatri).filter(q => stats.byQuatri[q] && stats.byQuatri[q].avgAll !== null && stats.byQuatri[q].avgAll !== undefined);
+    if (qs.length < 2) return '';
+    qs.sort((a, b) => QUATRIS.indexOf(b) - QUATRIS.indexOf(a)); // mes antic primer
+    const values = qs.map(q => stats.byQuatri[q].avgAll);
+    const w = 60, h = 22;
+    const max = 10, min = 0;
+    const xStep = w / (values.length - 1);
+    let d = '';
+    values.forEach((v, i) => {
+      const x = i * xStep;
+      const y = h - ((v - min) / (max - min)) * h;
+      d += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1) + ' ';
+    });
+    const lastX = (values.length - 1) * xStep;
+    const lastY = h - ((values[values.length - 1] - min) / (max - min)) * h;
+    return '<svg class="sparkline" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" style="color:' + color + ';">' +
+      '<path d="' + d + '" stroke="' + color + '" />' +
+      '<circle cx="' + lastX.toFixed(1) + '" cy="' + lastY.toFixed(1) + '" r="2" />' +
+    '</svg>';
+  }
+
   function renderRankingRow(profile, statsObj, index, isMe) {
     const fmtEcts = n => { const r = Math.round((n || 0) * 10) / 10; return r % 1 === 0 ? String(r) : r.toFixed(1); };
     const avgAll = statsObj && statsObj.avgAll !== null && statsObj.avgAll !== undefined ? statsObj.avgAll : null;
@@ -2770,10 +2917,21 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     const gradeCls = avgAll === null ? '' : (avgAll >= 5 ? 'pass' : 'fail');
     const name = escapeHtml(profile.displayName || profile.username || '?');
     const youBadge = isMe ? ' <span class="rank-you-badge">Tu</span>' : '';
+    const ringColor = avgToRingColor(avgAll);
+    const avatarHtml = profile.photoURL
+      ? '<img src="' + profile.photoURL + '" alt="" referrerpolicy="no-referrer" />'
+      : '<span class="top-item-avatar-fallback">' + userInitials(profile.displayName, profile.username) + '</span>';
+    const sparkline = buildSparklineSVG(statsObj, ringColor);
     return '<div class="top-item">' +
       '<div class="top-rank ' + rankCls + '">' + (index + 1) + '</div>' +
-      '<div><div class="top-name">' + name + youBadge + '</div>' +
-      '<div class="top-meta">Aprov. ' + fmtEcts(ectsApproved) + '/' + fmtEcts(ectsTotal) + ' ECTS \u00b7 Mitjana aprov. ' + (avgPassed !== null ? fmt(avgPassed) : '\u2014') + '</div></div>' +
+      '<div class="top-item-content">' +
+        '<div class="top-item-avatar avatar-rank-ring" style="--avatar-ring:' + ringColor + ';">' + avatarHtml + '</div>' +
+        '<div class="top-item-info">' +
+          '<div class="top-name">' + name + youBadge + '</div>' +
+          '<div class="top-meta">Aprov. ' + fmtEcts(ectsApproved) + '/' + fmtEcts(ectsTotal) + ' ECTS \u00b7 Mitjana aprov. ' + (avgPassed !== null ? fmt(avgPassed) : '\u2014') + '</div>' +
+        '</div>' +
+        sparkline +
+      '</div>' +
       '<div class="top-grade ' + gradeCls + '">' + (avgAll !== null ? fmt(avgAll) : '\u2014') + '</div>' +
     '</div>';
   }
@@ -2985,11 +3143,50 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
         const sortKey = it => (it.stats && it.stats.avgAll !== null && it.stats.avgAll !== undefined) ? it.stats.avgAll : -1;
         const sorted = [...items].sort((a, b) => sortKey(b) - sortKey(a));
 
+        // Punt 4: badge de posicio - calcular i comparar amb lultima posicio guardada
+        const myIdx = sorted.findIndex(it => it.isMe);
+        const myPos = myIdx + 1;
+        const total = sorted.length;
+        const lastPosKey = 'fibercalc-last-rank-pos';
+        let lastPos = null;
+        try { const stored = localStorage.getItem(lastPosKey); if (stored !== null) lastPos = parseInt(stored, 10); } catch (e) {}
+        let positionBanner = '';
+        if (myPos > 0 && total > 1) {
+          if (lastPos === null) {
+            // primera vegada, nomes guardar
+          } else if (myPos < lastPos) {
+            const cls = myPos === 1 ? 'promote-top' : '';
+            const msg = myPos === 1 ? 'Ets el número 1 del rànquing!' : 'Has pujat al #' + myPos;
+            positionBanner = '<div class="position-banner ' + cls + '" id="position-banner">' +
+              '<i class="ti ti-trophy"></i>' +
+              '<div class="position-banner-text"><div class="position-banner-title">' + msg + '</div>' +
+              '<div class="position-banner-sub">Abans estaves al #' + lastPos + '</div></div>' +
+              '<button class="position-banner-close" onclick="dismissPositionBanner()" aria-label="Tancar"><i class="ti ti-x"></i></button>' +
+            '</div>';
+          } else if (myPos > lastPos) {
+            positionBanner = '<div class="position-banner demote" id="position-banner">' +
+              '<i class="ti ti-trending-down"></i>' +
+              '<div class="position-banner-text"><div class="position-banner-title">Has baixat al #' + myPos + '</div>' +
+              '<div class="position-banner-sub">Abans estaves al #' + lastPos + '</div></div>' +
+              '<button class="position-banner-close" onclick="dismissPositionBanner()" aria-label="Tancar"><i class="ti ti-x"></i></button>' +
+            '</div>';
+          }
+          try { localStorage.setItem(lastPosKey, String(myPos)); } catch (e) {}
+        }
+        html += positionBanner;
+
         html += '<div class="top-list">' + sorted.map((it, i) => renderRankingRow(it.profile, it.stats, i, it.isMe)).join('') + '</div>';
 
+        // Punt 3: Grafica comparativa per quatris (linies superposades)
         const myQuatris = Object.keys(myStats.byQuatri || {}).sort((a, b) => QUATRIS.indexOf(b) - QUATRIS.indexOf(a));
+        if (myQuatris.length >= 2) {
+          html += '<div class="friends-section-title" style="margin-top:20px;"><i class="ti ti-chart-line"></i>Evolució comparada</div>' +
+            '<div id="compare-chart-container"></div>';
+        }
+
+        // Comparativa per quatri (taula existent)
         if (myQuatris.length > 0) {
-          html += '<div class="friends-section-title" style="margin-top:20px;"><i class="ti ti-calendar-stats"></i>Comparativa per quatrimestre</div>' +
+          html += '<div class="friends-section-title" style="margin-top:20px;"><i class="ti ti-calendar-stats"></i>Rànquing per quatrimestre</div>' +
             '<select id="friend-quatri-select" class="friend-quatri-select" onchange="renderQuatriComparison()">' +
             myQuatris.map(q => '<option value="' + q + '">' + q + '</option>').join('') +
             '</select>' +
@@ -3006,10 +3203,94 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
 
       container.innerHTML = html;
       if (document.getElementById('friend-quatri-select')) renderQuatriComparison();
+      if (document.getElementById('compare-chart-container')) renderCompareChart();
     } catch (err) {
       console.error(err);
       container.innerHTML = '<div class="friends-empty">Error carregant els amics.</div>';
     }
+  }
+
+  window.dismissPositionBanner = function() {
+    const el = document.getElementById('position-banner');
+    if (el) el.style.display = 'none';
+  };
+
+  function renderCompareChart() {
+    const container = document.getElementById('compare-chart-container');
+    if (!container || !friendRankingCache || friendRankingCache.length === 0) return;
+    // Recollir tots els quatris comuns (els meus + els d'algun amic)
+    const meStats = friendRankingCache.find(it => it.isMe);
+    if (!meStats || !meStats.stats || !meStats.stats.byQuatri) return;
+    const myQuatris = Object.keys(meStats.stats.byQuatri).sort((a, b) => QUATRIS.indexOf(b) - QUATRIS.indexOf(a));
+    if (myQuatris.length < 2) return;
+
+    // Per cada item, valors a cada quatri (null si no en t)
+    const colorPalette = ['#0EBB80', '#3B82F6', '#A78BFA', '#F59E0B', '#EF4444', '#14B8A6', '#EC4899'];
+    const series = friendRankingCache.map((item, i) => {
+      const color = item.isMe ? '#0EBB80' : colorPalette[(i % (colorPalette.length - 1)) + 1];
+      const values = myQuatris.map(q => {
+        const bq = item.stats && item.stats.byQuatri && item.stats.byQuatri[q];
+        return bq && bq.avgAll !== null && bq.avgAll !== undefined ? bq.avgAll : null;
+      });
+      return { name: item.profile.displayName || item.profile.username || '?', isMe: item.isMe, color, values };
+    }).filter(s => s.values.some(v => v !== null));
+
+    if (series.length === 0) { container.innerHTML = ''; return; }
+
+    const w = 600, h = 200;
+    const pad = { l: 30, r: 16, t: 18, b: 28 };
+    const innerW = w - pad.l - pad.r;
+    const innerH = h - pad.t - pad.b;
+    const xStep = myQuatris.length > 1 ? innerW / (myQuatris.length - 1) : innerW;
+    const yFor = v => pad.t + innerH - ((v - 0) / 10) * innerH;
+
+    // Grid 0,2.5,5,7.5,10
+    let gridHtml = '';
+    [0, 2.5, 5, 7.5, 10].forEach(v => {
+      const y = yFor(v);
+      gridHtml += '<line class="avg-line-grid" x1="' + pad.l + '" x2="' + (w - pad.r) + '" y1="' + y + '" y2="' + y + '" />';
+      gridHtml += '<text class="avg-line-grid-label" x="' + (pad.l - 6) + '" y="' + (y + 3) + '" text-anchor="end">' + v + '</text>';
+    });
+    const y5 = yFor(5);
+
+    let pathsHtml = '';
+    series.forEach(s => {
+      let d = '', started = false;
+      s.values.forEach((v, i) => {
+        if (v === null) { started = false; return; }
+        const x = pad.l + i * xStep;
+        const y = yFor(v);
+        d += (started ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1) + ' ';
+        started = true;
+      });
+      const sw = s.isMe ? 3 : 2;
+      pathsHtml += '<path d="' + d + '" stroke="' + s.color + '" stroke-width="' + sw + '" fill="none" stroke-linejoin="round" stroke-linecap="round" />';
+      // Dots
+      s.values.forEach((v, i) => {
+        if (v === null) return;
+        const x = pad.l + i * xStep;
+        const y = yFor(v);
+        pathsHtml += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (s.isMe ? 4 : 3) + '" fill="' + s.color + '" stroke="var(--surface)" stroke-width="1.5"><title>' + escapeHtml(s.name) + ' – ' + myQuatris[i] + ': ' + fmt(v) + '</title></circle>';
+      });
+    });
+
+    let labelsHtml = '';
+    myQuatris.forEach((q, i) => {
+      const x = pad.l + i * xStep;
+      labelsHtml += '<text class="avg-line-label" x="' + x + '" y="' + (h - 8) + '">' + escapeHtml(q) + '</text>';
+    });
+
+    const legend = series.map(s => '<div class="compare-legend-item"><div class="compare-legend-dot" style="background:' + s.color + ';"></div>' + escapeHtml(s.name) + (s.isMe ? ' (Tu)' : '') + '</div>').join('');
+
+    container.innerHTML = '<div class="compare-chart-wrap">' +
+      '<svg class="avg-line-svg" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="xMidYMid meet">' +
+        gridHtml +
+        '<line class="avg-line-baseline" x1="' + pad.l + '" x2="' + (w - pad.r) + '" y1="' + y5 + '" y2="' + y5 + '" />' +
+        pathsHtml +
+        labelsHtml +
+      '</svg>' +
+    '</div>' +
+    '<div class="compare-legend">' + legend + '</div>';
   }
 
   async function renderFriends() {
@@ -3029,9 +3310,92 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
         '<button class="btn btn-primary" onclick="searchFriend()"><i class="ti ti-search"></i>Cercar</button>' +
       '</div>' +
       '<div id="friend-search-result"></div>' +
-      '<div id="friend-lists"></div>';
+      '<div id="friend-lists"></div>' +
+      '<div id="activity-feed-section"></div>';
 
     await renderFriendsLists();
+    await renderActivityFeed();
+  }
+
+  async function renderActivityFeed() {
+    const root = document.getElementById('activity-feed-section');
+    if (!root) return;
+    try {
+      // Obtenir els uids dels amics acceptats
+      const myUid = fbUser.uid;
+      const col = window.fbCollection('friendships');
+      const q = window.fbQuery(col, window.fbWhere('users', 'array-contains', myUid));
+      const snap = await window.fbGetDocs(q);
+      const friendUids = [];
+      snap.forEach(d => {
+        const data = d.data();
+        if (data.status === 'accepted') {
+          const other = data.users.find(u => u !== myUid);
+          if (other) friendUids.push(other);
+        }
+      });
+
+      if (friendUids.length === 0) { root.innerHTML = ''; return; }
+
+      // Limit: Firestore array-contains-any nomes accepta 30 valors max
+      const queryUids = friendUids.slice(0, 30);
+      const aCol = window.fbCollection('activities');
+      const aQ = window.fbQuery(aCol, window.fbWhere('uid', 'in', queryUids), window.fbOrderBy('createdAt', 'desc'), window.fbLimit(15));
+      let aSnap;
+      try {
+        aSnap = await window.fbGetDocs(aQ);
+      } catch (e) {
+        // Si l'index no esta creat, mostrem missatge silenciosament i sortim
+        console.error('Activity feed error', e);
+        root.innerHTML = '';
+        return;
+      }
+      const activities = [];
+      aSnap.forEach(d => activities.push(d.data()));
+      if (activities.length === 0) { root.innerHTML = ''; return; }
+
+      // Obtenir profiles dels amics
+      const profilesByUid = {};
+      await Promise.all(friendUids.map(async uid => {
+        try {
+          const pSnap = await window.fbGetDoc(window.fbDocRef('profiles/' + uid));
+          profilesByUid[uid] = pSnap.exists() ? pSnap.data() : { username: '???' };
+        } catch (e) { profilesByUid[uid] = { username: '???' }; }
+      }));
+
+      function formatRelativeTime(ts) {
+        const diffSec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+        if (diffSec < 60) return 'fa uns segons';
+        const diffMin = Math.floor(diffSec / 60);
+        if (diffMin < 60) return 'fa ' + diffMin + ' min';
+        const diffH = Math.floor(diffMin / 60);
+        if (diffH < 24) return 'fa ' + diffH + ' h';
+        const diffD = Math.floor(diffH / 24);
+        if (diffD < 7) return 'fa ' + diffD + ' d';
+        if (diffD < 30) return 'fa ' + Math.floor(diffD / 7) + ' set.';
+        return 'fa ' + Math.floor(diffD / 30) + ' mesos';
+      }
+
+      let html = '<div class="friends-section-title" style="margin-top:24px;"><i class="ti ti-activity"></i>Activitat recent</div>' +
+        '<div class="activity-feed">';
+      activities.forEach(act => {
+        const prof = profilesByUid[act.uid] || { username: '???' };
+        const name = escapeHtml(prof.displayName || prof.username || '?');
+        if (act.type === 'approved') {
+          const grade = act.grade !== null && act.grade !== undefined ? ' (' + fmt(act.grade) + ')' : '';
+          html += '<div class="activity-item">' +
+            '<div class="activity-icon approve"><i class="ti ti-circle-check"></i></div>' +
+            '<div><div class="activity-text"><strong>' + name + '</strong> ha aprovat <strong>' + escapeHtml(act.sigla || '') + '</strong>' + grade + '</div>' +
+            '<div class="activity-time">' + formatRelativeTime(act.createdAt) + ' · ' + escapeHtml(act.quatri || '') + '</div></div>' +
+          '</div>';
+        }
+      });
+      html += '</div>';
+      root.innerHTML = html;
+    } catch (err) {
+      console.error('renderActivityFeed error', err);
+      root.innerHTML = '';
+    }
   }
 
   function initFirebaseFlow() {
