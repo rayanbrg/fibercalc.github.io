@@ -650,11 +650,11 @@ html.splash-on #splash { display: flex; }
 .splash-mark { position: relative; width: 104px; height: 104px; will-change: transform; }
 .splash-logo { position: relative; display: block; width: 104px; height: 104px; border-radius: 22%; box-shadow: 0 0 0 3.7px rgba(255,255,255,0.5), 0 5px 15px rgba(0,0,0,0.12); }
 /* Barra de llum que dóna la volta a la vora de la icona */
-.splash-ring-glow { position: absolute; inset: -9px; filter: drop-shadow(0 0 7px rgba(14,187,128,0.75)); pointer-events: none; }
-.splash-ring { position: absolute; inset: 0; border-radius: 30%; padding: 3px; overflow: hidden; background: rgba(14,187,128,0.14);
+.splash-ring-glow { position: absolute; inset: -9px; filter: drop-shadow(0 0 6px rgba(14,187,128,0.35)); pointer-events: none; }
+.splash-ring { position: absolute; inset: 0; border-radius: 30%; padding: 3px; overflow: hidden; background: rgba(14,187,128,0.10);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
-.splash-ring-spin { position: absolute; inset: -50%; background: conic-gradient(from 0deg, transparent 0deg, transparent 190deg, rgba(14,187,128,0.25) 240deg, #0EBB80 325deg, #A8FFDD 360deg); }
+.splash-ring-spin { position: absolute; inset: -50%; background: conic-gradient(from 0deg, transparent 0deg, transparent 250deg, rgba(14,187,128,0.35) 305deg, rgba(14,187,128,0.55) 335deg, transparent 360deg); }
 .splash-word { position: relative; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
 .splash-word .accent { color: var(--accent-dark); }
 html.splash-on .brand-logo { visibility: hidden; }
@@ -3852,8 +3852,8 @@ html.splash-on .brand-logo, html.splash-on .brand-name { animation: splashFailsa
     const HOLD = 650;
     const start = () => {
       if (finished) return;
-      // una volta completa de la barra de llum mentre el logo es queda quiet
-      anims.push(spin.animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], { duration: HOLD, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' }));
+      // brillantor decorativa suau: la llum només es balanceja una mica per la vora, no dona la volta
+      anims.push(spin.animate([{ transform: 'rotate(-60deg)' }, { transform: 'rotate(40deg)' }], { duration: HOLD + 300, easing: 'ease-in-out', fill: 'forwards' }));
       timer = setTimeout(fly, HOLD);
     };
     if (img.decode) img.decode().then(start, start); else start();
