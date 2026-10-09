@@ -211,6 +211,9 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
 .modal { background: var(--surface); border-radius: var(--radius-lg); padding: 1.5rem; width: min(100%, 460px); display: flex; flex-direction: column; gap: 16px; box-shadow: var(--shadow-modal); max-height: 90vh; overflow-y: auto; animation: slideUp 0.25s ease; }
 @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 .modal h3 { margin: 0; font-size: 18px; font-weight: 600; }
+.tpl-note { margin-top: 8px; padding: 10px 12px; background: var(--bg); border: 1px dashed var(--border-strong); border-radius: var(--radius-md); color: var(--text-secondary); font-size: 12px; line-height: 1.5; }
+.tpl-note a { color: var(--accent-dark); text-decoration: underline; }
+.tpl-note-extra { margin-top: 6px; }
 .modal label { font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500; }
 .modal input[type="text"], .modal input[type="number"], .modal select { width: 100%; height: 38px; font-size: 14px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text-primary); font-family: inherit; outline: none; transition: border-color 0.15s; }
 .modal input:focus, .modal select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
@@ -741,6 +744,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px s
   </div>
   <div id="modal-root"></div>
 </div>
+<script src="plantilles-gei.js"></script>
 <script>
 (function() {
   const STORAGE_KEY = 'fibercalc-data';
@@ -1606,6 +1610,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px s
 
   window.openModal = function(subjectId) {
     editingId = subjectId || null;
+    modalTemplateCode = null;
     if (editingId) {
       draft = JSON.parse(JSON.stringify(state.subjects.find(x => x.id === editingId)));
     } else {
@@ -1621,6 +1626,68 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px s
   };
 
   let modalActiveEval = null;
+
+  // ---- Plantilles d'avaluació (dades a plantilles-gei.js) ----
+  let modalTemplateCode = null;
+  function allTemplates() { return Array.isArray(window.FIBERCALC_TEMPLATES) ? window.FIBERCALC_TEMPLATES : []; }
+  function templatesAvailable() {
+    return !editingId && allTemplates().length > 0 && (!state.career || state.career === 'gei');
+  }
+  function templateLabel(t) { return t.code + ' — ' + t.name; }
+  function formatTplDate(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    return m ? (m[3] + '/' + m[2] + '/' + m[1]) : '';
+  }
+  function templateSectionHtml() {
+    if (!templatesAvailable()) return '';
+    const tpls = allTemplates();
+    const current = tpls.find(t => t.code === modalTemplateCode);
+    const options = tpls.map(t => '<option value="' + escapeHtml(templateLabel(t)) + '"></option>').join('');
+    let info = '';
+    if (current) {
+      const url = (window.FIBERCALC_TEMPLATE_URL_BASE || '') + encodeURIComponent(current.code);
+      info = '<div class="tpl-note" id="tpl-note">' +
+        '<strong>Plantilla orientativa.</strong> ' +
+        (current.approx ? 'Els pesos són aproximats. ' : '') +
+        'Els pesos poden canviar segons el curs i el professor' +
+        (formatTplDate(current.checked) ? ' (comprovat el ' + formatTplDate(current.checked) + ')' : '') +
+        '. <a href="' + escapeHtml(url) + '" target="_blank" rel="noopener">Consulta la guia oficial a la FIB</a>.' +
+        (current.note ? '<div class="tpl-note-extra">' + escapeHtml(current.note) + '</div>' : '') +
+        '</div>';
+    }
+    return '<div class="tpl-section">' +
+      '<label for="modal-template">Plantilla del grau <span style="color:var(--text-tertiary);font-weight:400;">(opcional)</span></label>' +
+      '<input type="text" id="modal-template" list="modal-template-list" autocomplete="off" ' +
+        'placeholder="Cerca per sigla o nom (ex. IDI)" ' +
+        'value="' + escapeHtml(current ? templateLabel(current) : '') + '" ' +
+        'oninput="onTemplateInput(this.value,false)" onchange="onTemplateInput(this.value,true)" />' +
+      '<datalist id="modal-template-list">' + options + '</datalist>' +
+      info + '</div>';
+  }
+  function applyTemplate(t) {
+    captureModalFields();
+    const evs = t.evaluations.map(ev => ({
+      id: genId(),
+      name: ev.name,
+      parts: ev.parts.map(pt => ({ id: genId(), name: pt[0], weight: pt[1], grade: null }))
+    }));
+    draft.sigla = t.code;
+    draft.fullName = t.name;
+    draft.ects = t.ects;
+    draft.evaluations = evs;
+    draft.activeEval = evs[0].id;
+    modalActiveEval = evs[0].id;
+    modalTemplateCode = t.code;
+    renderModal();
+  }
+  window.onTemplateInput = function(value, isChange) {
+    const v = (value || '').trim().toLowerCase();
+    if (!v) return;
+    const tpls = allTemplates();
+    let t = tpls.find(x => templateLabel(x).toLowerCase() === v);
+    if (!t && isChange) t = tpls.find(x => x.code.toLowerCase() === v);
+    if (t && t.code !== modalTemplateCode) applyTemplate(t);
+  };
 
   function renderEvalTabs() {
     const container = document.getElementById('modal-eval-tabs');
@@ -1698,6 +1765,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px s
       '<div class="modal-bg">' +
         '<div class="modal">' +
           '<h3>' + (editingId ? 'Editar assignatura' : 'Nova assignatura') + '</h3>' +
+          templateSectionHtml() +
           '<div><label>Sigla <span style="color:var(--accent-dark);">*</span></label>' +
             '<input type="text" id="modal-sigla" value="' + escapeHtml(draft.sigla || '') + '" placeholder="Ex. SO" maxlength="12" /></div>' +
           '<div><label>Nom complet <span style="color:var(--text-tertiary);font-weight:400;">(opcional)</span></label>' +
