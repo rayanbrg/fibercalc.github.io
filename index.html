@@ -1589,7 +1589,9 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     ).join('');
 
     root.innerHTML =
-      '<div class="modal-bg" onclick="if(event.target===this)closeModal()">' +
+      // Sense onclick al fons: un clic fora no ha de tancar el formulari i fer perdre les dades.
+      // Es tanca només amb Cancel·lar o Desar.
+      '<div class="modal-bg">' +
         '<div class="modal">' +
           '<h3>' + (editingId ? 'Editar assignatura' : 'Nova assignatura') + '</h3>' +
           '<div><label>Sigla <span style="color:var(--accent-dark);">*</span></label>' +
@@ -1656,9 +1658,13 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     ).join('') +
       '<div class="color-swatch custom ' + (isCustom ? 'selected' : '') + '" onclick="document.getElementById(\'modal-custom-color\').click()" title="Color personalitzat"></div>';
     const customValue = isCustom ? draft.color : '#0EBB80';
+    // L'<input type="color"> es crea sempre igual i no es torna a crear mentre el selector és obert
+    // (vegeu selectCustomColor). La fila només s'amaga/mostra.
     container.innerHTML = '<div class="color-picker">' + swatchesHtml + '</div>' +
-      (isCustom ? '<div class="color-custom-row"><input type="color" id="modal-custom-color" value="' + customValue + '" oninput="selectCustomColor(this.value)" /><label>Color personalitzat: ' + customValue.toUpperCase() + '</label></div>' :
-       '<input type="color" id="modal-custom-color" value="' + customValue + '" oninput="selectCustomColor(this.value)" style="display:none;" />');
+      '<div class="color-custom-row" id="modal-custom-row"' + (isCustom ? '' : ' style="display:none;"') + '>' +
+        '<input type="color" id="modal-custom-color" value="' + customValue + '" oninput="selectCustomColor(this.value)" onchange="showCustomColorRow()" />' +
+        '<label id="modal-custom-label">Color personalitzat: ' + customValue.toUpperCase() + '</label>' +
+      '</div>';
   }
 
   function captureModalFields() {
@@ -1718,7 +1724,18 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
   };
   window.selectCustomColor = function(hexValue) {
     draft.color = hexValue;
-    renderColorPicker();
+    // No cridem renderColorPicker(): aquest handler s'executa a cada moviment dins del selector natiu,
+    // i recrear l'<input type="color"> el feia tancar-se. Només actualitzem l'estat visual.
+    const container = document.getElementById('modal-color-picker');
+    if (!container) return;
+    container.querySelectorAll('.color-swatch').forEach(s => s.classList.toggle('selected', s.classList.contains('custom')));
+    const label = document.getElementById('modal-custom-label');
+    if (label) label.textContent = 'Color personalitzat: ' + hexValue.toUpperCase();
+  };
+  window.showCustomColorRow = function() {
+    // S'executa quan es tanca el selector (event "change"): ara ja és segur mostrar la fila.
+    const row = document.getElementById('modal-custom-row');
+    if (row) row.style.display = '';
   };
   window.closeModal = function() {
     document.getElementById('modal-root').innerHTML = '';
