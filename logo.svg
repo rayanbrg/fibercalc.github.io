@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Fibercalc">
+  <title>Fibercalc</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3BE3A5"/><stop offset="1" stop-color="#079669"/></linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DDF5EA"/></linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#12382C"/><stop offset="1" stop-color="#0A1F18"/></linearGradient>
+    <linearGradient id="key" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2BDDA0"/><stop offset="1" stop-color="#0A9466"/></linearGradient>
+    <linearGradient id="fib" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".55" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity=".9"/></linearGradient>
+    <filter id="sh" x="-20%" y="-15%" width="140%" height="150%"><feDropShadow dx="0" dy="14" stdDeviation="13" flood-color="#03382A" flood-opacity=".38"/></filter>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <path d="M0 116C0 52 52 0 116 0H396C460 0 512 52 512 116V176C390 128 150 140 0 196Z" fill="#fff" opacity=".13"/>
+  <!-- fibres: tres fils que surten del cantó inferior esquerre -->
+  <g fill="none" stroke="url(#fib)" stroke-linecap="round">
+    <path d="M60 400C130 260 270 170 452 128" stroke-width="6"/>
+    <path d="M72 448C160 320 300 238 452 188" stroke-width="5"/>
+    <path d="M120 470C210 350 330 280 452 246" stroke-width="4"/>
+  </g>
+  <g fill="#fff" opacity=".8"><circle cx="452" cy="128" r="8"/><circle cx="452" cy="188" r="6.5"/><circle cx="452" cy="246" r="5"/></g>
+  <!-- calculadora -->
+  <g filter="url(#sh)"><rect x="136" y="90" width="240" height="334" rx="42" fill="url(#body)"/></g>
+  <rect x="162" y="116" width="188" height="94" rx="24" fill="url(#screen)"/>
+  <path d="M208 166l30 30 62-60" fill="none" stroke="#4DF2B5" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- tecles: les verdes formen una F -->
+  <g fill="#CDEBDD">
+    <rect x="298" y="292" width="52" height="44" rx="14"/>
+    <rect x="230" y="350" width="52" height="44" rx="14"/><rect x="298" y="350" width="52" height="44" rx="14"/>
+  </g>
+  <g fill="url(#key)">
+    <rect x="162" y="234" width="52" height="44" rx="14"/><rect x="230" y="234" width="52" height="44" rx="14"/><rect x="298" y="234" width="52" height="44" rx="14"/>
+    <rect x="162" y="292" width="52" height="44" rx="14"/><rect x="230" y="292" width="52" height="44" rx="14"/>
+    <rect x="162" y="350" width="52" height="44" rx="14"/>
+  </g>
+</svg>
