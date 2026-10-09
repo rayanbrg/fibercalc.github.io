@@ -606,6 +606,14 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px s
 .cal-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .cal-day { min-width: 0; }
 
+/* Indicador verd que llisca entre pestanyes */
+.page-tabs { position: relative; }
+.page-tab { position: relative; z-index: 1; }
+.tab-indicator { position: absolute; top: 0; left: 0; width: 0; height: 0; z-index: 0; background: var(--accent); border-radius: var(--radius-sm); box-shadow: 0 2px 8px rgba(14,187,128,0.3); opacity: 0; pointer-events: none; transition: transform 0.45s var(--ease), width 0.45s var(--ease), height 0.45s var(--ease), opacity 0.2s; }
+.tab-indicator.ready { opacity: 1; }
+/* Si l'indicador funciona, la pestanya activa deixa de pintar el seu propi fons */
+.page-tabs.has-indicator .page-tab.active { background: transparent; box-shadow: none; }
+
 /* Avisos (toasts) */
 .toast-root { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 200; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; width: min(92vw, 420px); }
 .toast { pointer-events: auto; display: flex; align-items: center; gap: 10px; width: 100%; background: var(--text-primary); color: var(--surface); padding: 11px 12px 11px 14px; border-radius: 14px; box-shadow: 0 10px 30px rgba(11,14,20,0.25); font-size: 14px; font-weight: 500; animation: toastIn 0.35s var(--ease) both; }
@@ -624,6 +632,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px s
   .page-tab { flex: 1; min-width: 0; flex-direction: column; justify-content: center; gap: 3px; padding: 8px 2px; font-size: 11px; border-radius: 14px; }
   .page-tab i { font-size: 20px; }
   .tab-long { display: none; }
+  .tab-indicator { border-radius: 14px; }
   .tab-short { display: inline; }
   .toast-root { bottom: calc(92px + env(safe-area-inset-bottom)); }
   .calendar-panel { padding: 0.9rem; }
@@ -709,6 +718,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px s
     </div>
   </div>
   <div class="page-tabs">
+    <span class="tab-indicator" aria-hidden="true"></span>
     <button class="page-tab active" id="tab-notes" onclick="switchPage('notes')"><i class="ti ti-notebook"></i><span class="tab-long">Les meves notes</span><span class="tab-short">Notes</span></button>
     <button class="page-tab" id="tab-stats" onclick="switchPage('stats')"><i class="ti ti-chart-pie"></i>Estadístiques</button>
     <button class="page-tab" id="tab-calendar" onclick="switchPage('calendar')"><i class="ti ti-calendar"></i>Calendari</button>
@@ -1943,6 +1953,7 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px s
     if (page === 'stats') renderStats();
     if (page === 'calendar') renderCalendar();
     if (page === 'friends') renderFriends();
+    moveTabIndicator(true);
     playEntrance(page);
   };
 
@@ -3612,6 +3623,21 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px s
     }
   }
 
+  // Col·loca l'indicador verd sota la pestanya activa (amb animació o directament)
+  function moveTabIndicator(animate) {
+    const bar = document.querySelector('.page-tabs');
+    const ind = bar && bar.querySelector('.tab-indicator');
+    const active = bar && bar.querySelector('.page-tab.active');
+    if (!ind || !active || active.offsetWidth === 0) return;
+    if (!animate) ind.style.transition = 'none';
+    ind.style.width = active.offsetWidth + 'px';
+    ind.style.height = active.offsetHeight + 'px';
+    ind.style.transform = 'translate(' + active.offsetLeft + 'px, ' + active.offsetTop + 'px)';
+    if (!animate) { void ind.offsetWidth; ind.style.transition = ''; }
+    bar.classList.add('has-indicator');
+    ind.classList.add('ready');
+  }
+
   // Avisos flotants (es poden apilar; amb opció de desfer)
   window.showToast = function(message, opts) {
     opts = opts || {};
@@ -3657,6 +3683,14 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px s
   renderFilters();
   render();
   playEntrance('notes');
+  moveTabIndicator(false);
+  window.addEventListener('resize', () => moveTabIndicator(false));
+  window.addEventListener('load', () => moveTabIndicator(false));
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => moveTabIndicator(false));
+  if (window.ResizeObserver) {
+    const tabsRO = new ResizeObserver(() => moveTabIndicator(false));
+    document.querySelectorAll('.page-tabs, .page-tab').forEach(el => tabsRO.observe(el));
+  }
   initFirebaseFlow();
 })();
 </script>
