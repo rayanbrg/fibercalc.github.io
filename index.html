@@ -643,6 +643,22 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px s
   .cal-day { min-height: 44px; padding: 3px; }
 }
 
+/* ---- Pantalla d'inici (splash): el logo gran vola cap al lloc on queda a la capçalera ---- */
+#splash { position: fixed; inset: 0; z-index: 10000; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; pointer-events: auto; }
+html.splash-on #splash { display: flex; }
+.splash-bg { position: absolute; inset: 0; background: var(--bg); }
+.splash-logo { position: relative; width: 104px; height: 104px; border-radius: 22%; box-shadow: 0 10px 30px rgba(7,150,105,0.28), 0 0 0 1.5px rgba(255,255,255,0.5); will-change: transform, opacity; }
+.splash-word { position: relative; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
+.splash-word .accent { color: var(--accent-dark); }
+html.splash-on .brand-logo { visibility: hidden; }
+html.splash-on .brand-name { opacity: 0; }
+.brand-name { transition: opacity 0.3s ease; }
+/* Xarxa de seguretat: si el JS falla, la splash desapareix sola */
+html.splash-on #splash { animation: splashFailsafe 0.01s 4s forwards; }
+html.splash-on .brand-logo, html.splash-on .brand-name { animation: splashFailsafeShow 0.01s 4s forwards; }
+@keyframes splashFailsafe { to { opacity: 0; visibility: hidden; } }
+@keyframes splashFailsafeShow { to { opacity: 1; visibility: visible; } }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
@@ -691,6 +707,24 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px s
 </script>
 </head>
 <body>
+<script>
+  // Decideix abans del primer pintat si es mostra la splash (1 cop per sessió; ?splash la força; mai amb moviment reduït)
+  (function () {
+    try {
+      var t = localStorage.getItem('fibercalc-theme');
+      if (t) document.documentElement.setAttribute('data-theme', t);
+      var forced = /[?&]splash\b/.test(location.search);
+      var seen = sessionStorage.getItem('fibercalc-splash') === '1';
+      var reduced = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if ((forced || !seen) && !reduced) document.documentElement.classList.add('splash-on');
+    } catch (e) {}
+  })();
+</script>
+<div id="splash" aria-hidden="true">
+  <div class="splash-bg"></div>
+  <img id="splash-logo" class="splash-logo" src="logo.svg" alt="" />
+  <div id="splash-word" class="splash-word">Fiber<span class="accent">calc</span></div>
+</div>
 <div class="container">
   <div class="topbar">
     <div class="brand">
@@ -3759,6 +3793,55 @@ button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px s
     const tabsRO = new ResizeObserver(() => moveTabIndicator(false));
     document.querySelectorAll('.page-tabs, .page-tab').forEach(el => tabsRO.observe(el));
   }
+  // ---- Splash: 0,8 s. El logo apareix al centre i vola cap al lloc de la capçalera ----
+  (function playSplash() {
+    const root = document.documentElement;
+    const splash = document.getElementById('splash');
+    if (!splash) return;
+    if (!root.classList.contains('splash-on')) { splash.remove(); return; }
+    try { sessionStorage.setItem('fibercalc-splash', '1'); } catch (e) {}
+    const logo = document.getElementById('splash-logo');
+    const word = document.getElementById('splash-word');
+    const bg = splash.querySelector('.splash-bg');
+    const target = document.getElementById('brand-logo');
+    const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+    let finished = false, timer = null, anims = [];
+
+    function finish() {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      anims.forEach(a => { try { a.cancel(); } catch (e) {} });
+      root.classList.remove('splash-on');
+      splash.remove();
+    }
+    function fly() {
+      if (finished) return;
+      const tr = target.getBoundingClientRect();
+      const lr = logo.getBoundingClientRect();
+      if (!tr.width || !lr.width) { finish(); return; }
+      const dx = (tr.left + tr.width / 2) - (lr.left + lr.width / 2);
+      const dy = (tr.top + tr.height / 2) - (lr.top + lr.height / 2);
+      const sc = tr.width / lr.width;
+      const dur = 400;
+      const flight = logo.animate(
+        [{ transform: 'translate(0,0) scale(1)' }, { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + sc + ')' }],
+        { duration: dur, easing: EASE, fill: 'forwards' });
+      anims.push(flight,
+        bg.animate([{ opacity: 1 }, { opacity: 0 }], { duration: dur, easing: 'ease', fill: 'forwards' }),
+        word.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: 'ease', fill: 'forwards' }));
+      playEntrance('notes');
+      flight.onfinish = finish;
+    }
+
+    anims.push(
+      logo.animate([{ opacity: 0, transform: 'scale(0.8)' }, { opacity: 1, transform: 'scale(1)' }], { duration: 300, easing: EASE, fill: 'backwards' }),
+      word.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 300, delay: 60, easing: EASE, fill: 'backwards' }));
+    timer = setTimeout(fly, 400);
+    splash.addEventListener('click', finish);
+    document.addEventListener('keydown', finish, { once: true });
+  })();
+
   initFirebaseFlow();
 })();
 </script>
