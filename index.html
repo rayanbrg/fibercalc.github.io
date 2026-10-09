@@ -235,6 +235,8 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
 .btn-ghost { background: transparent; border: none; color: var(--text-secondary); font-size: 13px; cursor: pointer; padding: 6px 10px; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; font-weight: 500; border-radius: var(--radius-sm); transition: color 0.15s, background 0.15s; }
 .btn-ghost:hover { color: var(--text-primary); background: var(--bg); }
 .warn { font-size: 12px; color: var(--warn-text); background: var(--warn-bg); padding: 8px 12px; border-radius: var(--radius-md); margin-top: 8px; }
+.field-error { font-size: 12px; font-weight: 500; color: var(--fail-text); margin-top: 4px; }
+.modal input.input-invalid { border-color: #EF4444; box-shadow: 0 0 0 2px var(--fail-bg); }
 .eval-tabs { display: flex; gap: 4px; flex-wrap: wrap; padding: 4px; background: var(--bg); border-radius: var(--radius-md); }
 .eval-tab { background: transparent; color: var(--text-secondary); border: none; border-radius: var(--radius-sm); padding: 6px 10px; font-size: 12.5px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; transition: background 0.15s, color 0.15s; }
 .eval-tab:hover { background: var(--surface); color: var(--text-primary); }
@@ -1569,6 +1571,25 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     syncDraftInputs();
   }
 
+  // Errors de validació al costat del camp (en lloc d'un alert), sense perdre la resta de dades del formulari.
+  function clearFieldErrors() {
+    document.querySelectorAll('#modal-root .field-error').forEach(n => n.remove());
+    document.querySelectorAll('#modal-root .input-invalid').forEach(n => n.classList.remove('input-invalid'));
+  }
+  function showFieldError(input, message) {
+    clearFieldErrors();
+    input.classList.add('input-invalid');
+    const err = document.createElement('div');
+    err.className = 'field-error';
+    err.setAttribute('role', 'alert');
+    err.textContent = message;
+    // A la fila d'apartats (graella de 3 columnes) l'error va sota la fila sencera
+    (input.closest('.part-edit') || input).insertAdjacentElement('afterend', err);
+    input.addEventListener('input', clearFieldErrors, { once: true });
+    input.focus();
+    if (input.scrollIntoView) input.scrollIntoView({ block: 'nearest' });
+  }
+
   function updateWarn() {
     const currentEval = draft.evaluations.find(e => e.id === modalActiveEval);
     if (!currentEval) return;
@@ -1601,7 +1622,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
           '<div><label>Quatrimestre</label>' +
             '<select id="modal-quatri">' + quatriOptions + '</select></div>' +
           '<div><label>ECTS</label>' +
-            '<input type="number" id="modal-ects" value="' + (draft.ects || 6) + '" min="0" max="60" step="0.5" /></div>' +
+            '<input type="number" id="modal-ects" value="' + (draft.ects || 6) + '" min="0.5" max="60" step="0.5" /></div>' +
           '<div><label>Color</label><div id="modal-color-picker"></div></div>' +
           '<div><label>Tipus d\'avaluació</label>' +
             '<div class="eval-tabs" id="modal-eval-tabs"></div>' +
@@ -1751,10 +1772,31 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     const qInput = document.getElementById('modal-quatri');
     s.quatri = qInput.value;
     const eInput = document.getElementById('modal-ects');
-    s.ects = parseFloat(eInput.value) || 6;
+    clearFieldErrors();
+    // Camp buit = valor per defecte (6), com abans. Qualsevol altre valor ha d'estar dins del rang.
+    const ectsRaw = eInput.value.trim();
+    const ects = ectsRaw === '' ? 6 : Number(ectsRaw);
+    if (!Number.isFinite(ects) || ects <= 0 || ects > 60) {
+      showFieldError(eInput, 'Els ECTS han de ser un número més gran que 0 i com a màxim 60.');
+      return;
+    }
+    s.ects = ects;
     // Validar totes les avaluacions
     for (const ev of s.evaluations) {
       if (ev.parts.length === 0) { alert("Cada avaluació ha de tenir com a mínim un apartat (" + ev.name + ")"); return; }
+      // Cada pes ha d'estar entre 0 i 100 (els camps ja ho declaren, però el desat no ho feia complir)
+      const badPart = ev.parts.find(p => !(p.weight >= 0 && p.weight <= 100));
+      if (badPart) {
+        if (modalActiveEval !== ev.id) {
+          // L'error és en una altra avaluació: la mostrem perquè l'usuari vegi el camp
+          modalActiveEval = ev.id;
+          renderEvalTabs();
+          renderEvalContent();
+        }
+        const wInput = document.querySelector('#parts-edit input[data-part-id="' + badPart.id + '"][data-field="weight"]');
+        if (wInput) showFieldError(wInput, 'El pes ha de ser un percentatge entre 0 i 100.');
+        return;
+      }
       const tw = ev.parts.reduce((a,p) => a + (parseFloat(p.weight) || 0), 0);
       if (tw < 100) {
         if (!confirm('La suma de "' + ev.name + '" és ' + fmt(tw) + '%. Vols desar igualment?')) return;
@@ -2010,7 +2052,8 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
           '<div><label>Assignatura (opcional)</label><select id="event-subject">' + subjectOptions + '</select></div>' +
           '<div><label>Descripció (opcional)</label><input type="text" id="event-desc" value="' + escapeHtml(ev.description || '') + '" placeholder="Notes adicionals..." /></div>' +
           '<div class="modal-actions">' +
-            (editingEventId ? '<button class="btn" onclick="deleteEvent()" style="color:#EF4444;border-color:#EF4444;">Eliminar</button>' : '<button class="btn" onclick="closeEventModal()">Cancel·lar</button>') +
+            (editingEventId ? '<button class="btn" onclick="deleteEvent()" style="color:#EF4444;border-color:#EF4444;">Eliminar</button>' : '') +
+            '<button class="btn" onclick="closeEventModal()">Cancel·lar</button>' +
             '<button class="btn btn-primary" onclick="saveEvent()">Desar</button>' +
           '</div>' +
         '</div>' +
