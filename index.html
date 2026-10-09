@@ -573,6 +573,67 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
   .brand-name { font-size: 18px; }
   .brand-logo { height: 38px; width: 38px; }
 }
+
+/* ===== Disseny suau: moviment, avisos i barra inferior al mòbil ===== */
+:root { --ease: cubic-bezier(0.22, 1, 0.36, 1); }
+:root:not([data-theme="dark"]) { --shadow: 0 1px 2px rgba(11,14,20,0.04), 0 4px 14px rgba(11,14,20,0.05); --shadow-hover: 0 10px 28px rgba(11,14,20,0.10); }
+
+@keyframes modalIn { from { opacity: 0; transform: translateY(18px) scale(0.96); } to { opacity: 1; transform: none; } }
+.modal { animation: modalIn 0.35s var(--ease); }
+
+@keyframes pageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.page-enter { animation: pageIn 0.4s var(--ease) both; }
+@keyframes cardIn { from { opacity: 0; transform: translateY(14px) scale(0.985); } to { opacity: 1; transform: none; } }
+.cards-in .card { animation: cardIn 0.5s var(--ease) both; }
+.cards-in .card:nth-child(2) { animation-delay: 0.05s; }
+.cards-in .card:nth-child(3) { animation-delay: 0.1s; }
+.cards-in .card:nth-child(4) { animation-delay: 0.15s; }
+.cards-in .card:nth-child(5) { animation-delay: 0.2s; }
+.cards-in .card:nth-child(6) { animation-delay: 0.25s; }
+.cards-in .card:nth-child(7) { animation-delay: 0.3s; }
+.cards-in .card:nth-child(n+8) { animation-delay: 0.35s; }
+
+.btn, .btn-add, .btn-ghost, .page-tab, .icon-action, .icon-btn { transition-property: background-color, color, border-color, box-shadow, transform, opacity; transition-duration: 0.18s; transition-timing-function: var(--ease); }
+.btn:active, .btn-add:active, .page-tab:active, .icon-action:active { transform: scale(0.96); }
+.card { transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), background-color 0.3s, color 0.3s; }
+@media (hover: hover) { .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); } }
+.metric-card, .stat-block, .modal, .page-tabs { transition: background-color 0.3s, border-color 0.3s, color 0.3s, box-shadow 0.3s; }
+button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.tab-short { display: none; }
+
+/* Calendari: les 7 columnes poden encongir-se (abans tenien una amplada mínima i desbordaven al mòbil) */
+.cal-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.cal-day { min-width: 0; }
+
+/* Avisos (toasts) */
+.toast-root { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 200; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; width: min(92vw, 420px); }
+.toast { pointer-events: auto; display: flex; align-items: center; gap: 10px; width: 100%; background: var(--text-primary); color: var(--surface); padding: 11px 12px 11px 14px; border-radius: 14px; box-shadow: 0 10px 30px rgba(11,14,20,0.25); font-size: 14px; font-weight: 500; animation: toastIn 0.35s var(--ease) both; }
+.toast > i { color: var(--accent); font-size: 18px; flex-shrink: 0; }
+.toast-text { flex: 1; min-width: 0; }
+.toast-action { margin-left: auto; background: transparent; border: none; color: var(--accent); font: inherit; font-weight: 700; cursor: pointer; padding: 4px 10px; border-radius: 8px; }
+.toast-action:hover { background: rgba(127,127,127,0.18); }
+.toast-out { animation: toastOut 0.22s ease forwards; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(14px) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes toastOut { to { opacity: 0; transform: translateY(8px) scale(0.97); } }
+
+/* Barra de navegació inferior al mòbil: tota l'amplada, sense desbordar */
+@media (max-width: 600px) {
+  .container { padding: 1rem 1rem calc(96px + env(safe-area-inset-bottom)); }
+  .page-tabs { position: fixed; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); width: auto; margin: 0; z-index: 60; gap: 2px; padding: 6px; border-radius: 20px; box-shadow: 0 8px 30px rgba(11,14,20,0.18); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+  .page-tab { flex: 1; min-width: 0; flex-direction: column; justify-content: center; gap: 3px; padding: 8px 2px; font-size: 11px; border-radius: 14px; }
+  .page-tab i { font-size: 20px; }
+  .tab-long { display: none; }
+  .tab-short { display: inline; }
+  .toast-root { bottom: calc(92px + env(safe-area-inset-bottom)); }
+  .calendar-panel { padding: 0.9rem; }
+  .cal-grid { gap: 3px; }
+  .cal-day { min-height: 44px; padding: 3px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
 </style>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
@@ -648,7 +709,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     </div>
   </div>
   <div class="page-tabs">
-    <button class="page-tab active" id="tab-notes" onclick="switchPage('notes')"><i class="ti ti-notebook"></i>Les meves notes</button>
+    <button class="page-tab active" id="tab-notes" onclick="switchPage('notes')"><i class="ti ti-notebook"></i><span class="tab-long">Les meves notes</span><span class="tab-short">Notes</span></button>
     <button class="page-tab" id="tab-stats" onclick="switchPage('stats')"><i class="ti ti-chart-pie"></i>Estadístiques</button>
     <button class="page-tab" id="tab-calendar" onclick="switchPage('calendar')"><i class="ti ti-calendar"></i>Calendari</button>
     <button class="page-tab" id="tab-friends" onclick="switchPage('friends')"><i class="ti ti-users"></i>Amics</button>
@@ -1487,10 +1548,18 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
   }
 
   window.deleteSubject = function(subjectId) {
-    if (!confirm('Vols eliminar aquesta assignatura?')) return;
+    // Sense confirm(): s'elimina i es pot desfer des de l'avís durant uns segons
+    const idx = state.subjects.findIndex(s => s.id === subjectId);
+    if (idx < 0) return;
+    const removed = state.subjects[idx];
     state.subjects = state.subjects.filter(s => s.id !== subjectId);
     if (expandedId === subjectId) expandedId = null;
     save(); renderFilters(); render();
+    showToast('Assignatura eliminada', { icon: 'ti-trash', undo: () => {
+      state.subjects.splice(Math.min(idx, state.subjects.length), 0, removed);
+      save(); renderFilters(); render();
+      showToast('Assignatura restaurada');
+    } });
   };
 
   window.onDragStart = function(ev, id) {
@@ -1768,6 +1837,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
   };
   window.saveModal = function() {
     const s = draft;
+    const wasEditing = !!editingId;
     const siglaInput = document.getElementById('modal-sigla');
     s.sigla = siglaInput.value.trim();
     if (!s.sigla) { alert("La sigla és obligatòria"); return; }
@@ -1827,6 +1897,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
       state.subjects.push(s);
     }
     save(); closeModal(); renderFilters(); render();
+    showToast(wasEditing ? 'Assignatura actualitzada' : 'Assignatura desada');
   };
 
   const GREETING_VARIANTS = {
@@ -1872,6 +1943,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     if (page === 'stats') renderStats();
     if (page === 'calendar') renderCalendar();
     if (page === 'friends') renderFriends();
+    playEntrance(page);
   };
 
   // ============ CALENDAR ============
@@ -2067,6 +2139,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     const subjectId = document.getElementById('event-subject').value;
     const description = document.getElementById('event-desc').value.trim();
     if (!date) { alert('Posa una data'); return; }
+    const wasEditing = !!editingEventId;
     const ev = { id: editingEventId || genId(), title, date, time, type, subjectId, description };
     if (editingEventId) {
       const idx = state.events.findIndex(e => e.id === editingEventId);
@@ -2078,16 +2151,28 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
     closeEventModal();
     if (activePage === 'calendar') renderCalendar();
     if (activePage === 'notes') render();
+    showToast(wasEditing ? 'Event actualitzat' : 'Event desat');
   };
 
   window.deleteEvent = function() {
     if (!editingEventId) return;
-    if (!confirm('Eliminar aquest event?')) return;
+    // Sense confirm(): s'elimina i es pot desfer des de l'avís durant uns segons
+    const idx = state.events.findIndex(e => e.id === editingEventId);
+    if (idx < 0) return;
+    const removed = state.events[idx];
     state.events = state.events.filter(e => e.id !== editingEventId);
     save();
     closeEventModal();
-    if (activePage === 'calendar') renderCalendar();
-    if (activePage === 'notes') render();
+    const refresh = () => {
+      if (activePage === 'calendar') renderCalendar();
+      if (activePage === 'notes') render();
+    };
+    refresh();
+    showToast('Event eliminat', { icon: 'ti-trash', undo: () => {
+      state.events.splice(Math.min(idx, state.events.length), 0, removed);
+      save(); refresh();
+      showToast('Event restaurat');
+    } });
   };
 
   window.closeEventModal = function() {
@@ -3469,8 +3554,109 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
   load();
   renderCareerTag();
   updateGreeting();
+  // ============ MOVIMENT I AVISOS ============
+  const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  // Anima el primer número d'un text (p. ex. "7.50" o "6") de 0 fins al seu valor final
+  function animateCountUp(el) {
+    const node = Array.from(el.childNodes).find(n => n.nodeType === 3 && /\d/.test(n.nodeValue));
+    if (!node) return;
+    const finalText = node.nodeValue;
+    const m = finalText.match(/^(\s*-?)(\d+)([.,](\d+))?/);
+    if (!m) return;
+    const decimals = m[4] ? m[4].length : 0;
+    const sep = m[3] ? m[3][0] : '.';
+    const target = parseFloat(m[2] + (m[4] ? '.' + m[4] : ''));
+    if (!isFinite(target) || target === 0) return;
+    const rest = finalText.slice(m[0].length);
+    const fmtNum = v => decimals ? v.toFixed(decimals).replace('.', sep) : String(Math.round(v));
+    const start = performance.now(), dur = 700;
+    function step(now) {
+      const t = Math.min(1, (now - start) / dur);
+      if (t >= 1) { node.nodeValue = finalText; return; }
+      node.nodeValue = m[1] + fmtNum(target * (1 - Math.pow(1 - t, 3))) + rest;
+      requestAnimationFrame(step);
+    }
+    node.nodeValue = m[1] + fmtNum(0) + rest;
+    requestAnimationFrame(step);
+  }
+
+  // Entrada suau en canviar de pàgina (no es repeteix a cada redibuix)
+  function playEntrance(page) {
+    if (REDUCED_MOTION) return;
+    const view = document.getElementById(page + '-view');
+    if (!view) return;
+    view.classList.remove('page-enter');
+    void view.offsetWidth;
+    view.classList.add('page-enter');
+    if (page === 'notes') {
+      const grid = document.getElementById('grid');
+      if (grid) {
+        grid.classList.add('cards-in');
+        setTimeout(() => grid.classList.remove('cards-in'), 1000);
+      }
+      document.querySelectorAll('#dashboard .metric-value').forEach(animateCountUp);
+    } else if (page === 'stats') {
+      view.querySelectorAll('.progress-circle-bar').forEach(el => {
+        const finalOffset = el.getAttribute('stroke-dashoffset');
+        el.style.strokeDashoffset = el.getAttribute('stroke-dasharray');
+        void el.getBoundingClientRect();
+        requestAnimationFrame(() => { el.style.strokeDashoffset = finalOffset; });
+      });
+      view.querySelectorAll('.stat-block circle[stroke-dasharray]:not(.progress-circle-bar)').forEach(el => {
+        const finalDash = el.getAttribute('stroke-dasharray');
+        el.style.strokeDasharray = '0 1000';
+        void el.getBoundingClientRect();
+        requestAnimationFrame(() => { el.style.strokeDasharray = finalDash; });
+      });
+    }
+  }
+
+  // Avisos flotants (es poden apilar; amb opció de desfer)
+  window.showToast = function(message, opts) {
+    opts = opts || {};
+    let root = document.getElementById('toast-root');
+    if (!root) {
+      root = document.createElement('div');
+      root.id = 'toast-root';
+      root.className = 'toast-root';
+      root.setAttribute('aria-live', 'polite');
+      document.body.appendChild(root);
+    }
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.setAttribute('role', 'status');
+    const icon = document.createElement('i');
+    icon.className = 'ti ' + (opts.icon || 'ti-circle-check');
+    const text = document.createElement('span');
+    text.className = 'toast-text';
+    text.textContent = message;
+    toast.appendChild(icon);
+    toast.appendChild(text);
+    let timer;
+    const dismiss = () => {
+      clearTimeout(timer);
+      toast.classList.add('toast-out');
+      setTimeout(() => toast.remove(), 220);
+    };
+    if (opts.undo) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'toast-action';
+      btn.textContent = 'Desfer';
+      btn.onclick = () => { dismiss(); opts.undo(); };
+      toast.appendChild(btn);
+    }
+    root.appendChild(toast);
+    while (root.children.length > 3) root.firstChild.remove();
+    timer = setTimeout(dismiss, opts.undo ? 6000 : 2800);
+    toast.addEventListener('mouseenter', () => clearTimeout(timer));
+    toast.addEventListener('mouseleave', () => { timer = setTimeout(dismiss, 2000); });
+  };
+
   renderFilters();
   render();
+  playEntrance('notes');
   initFirebaseFlow();
 })();
 </script>
