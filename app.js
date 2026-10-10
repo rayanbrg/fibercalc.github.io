@@ -1523,6 +1523,11 @@
     if (!root) return;
     if (!H) { root.innerHTML = '<div class="grid-empty">No s\'han pogut carregar els horaris.</div>'; return; }
     const picks = getSched().picks;
+    // L'horari és d'un sol quatrimestre: fora les assignatures que no són dels teus d'aquest quatri
+    const okCodes = new Set(schedMine());
+    let pruned = false;
+    Object.keys(picks).forEach(c => { if (!okCodes.has(c)) { delete picks[c]; pruned = true; } });
+    if (pruned) save();
     const codes = Object.keys(picks);
     const upd = H.updated ? H.updated.split('-').reverse().join('/') : '';
     const todayDow = new Date().getDay(); // 1..5 = dl..dv
@@ -1644,26 +1649,21 @@
     document.getElementById('modal-root').innerHTML =
       '<div class="modal-bg" id="sched-add"><div class="modal sch-modal" role="dialog" aria-label="Afegeix assignatures">' +
         '<h3>Afegeix assignatures</h3>' +
-        '<input type="text" id="sched-q" placeholder="Cerca per sigla (IDI, XC, PRO1…)" autocomplete="off" oninput="schedFilterAdd(this.value)" />' +
+        '<p class="sch-add-sub">Només les teves assignatures de <b>' + escapeHtml(schedQuatri()) + '</b>.</p>' +
         '<div id="sched-add-list" class="sch-add-list"></div>' +
         '<div class="modal-actions"><button class="btn btn-primary" onclick="closeModal()">Fet</button></div>' +
       '</div></div>';
     renderSchedAddList();
-    const q = document.getElementById('sched-q'); if (q) q.focus();
   };
   window.schedFilterAdd = function(v) { schedQuery = String(v || '').trim().toUpperCase(); renderSchedAddList(); };
   function renderSchedAddList() {
     const box = document.getElementById('sched-add-list');
     if (!box) return;
-    const picks = getSched().picks, codes = schedCodes();
-    const pill = c => '<button type="button" class="sch-add-pill' + (picks[c] ? ' on' : '') + '" aria-pressed="' + !!picks[c] + '" onclick="schedToggle(\'' + c + '\')">' + (picks[c] ? '<i class="ti ti-check"></i>' : '') + escapeHtml(c) + '</button>';
-    const mine = schedMine();
-    let html = '';
-    if (!schedQuery && mine.length) html += '<div class="sch-add-h">Les teves assignatures de ' + escapeHtml(schedQuatri()) + '</div><div class="sch-add-pills">' + mine.map(pill).join('') + '</div>';
-    const rest = codes.filter(c => (!schedQuery ? !mine.includes(c) : c.includes(schedQuery)));
-    html += '<div class="sch-add-h">' + (schedQuery ? 'Resultats' : 'Totes les assignatures del GEI') + '</div>' +
-      (rest.length ? '<div class="sch-add-pills">' + rest.map(pill).join('') + '</div>' : '<div class="sch-add-none">Cap assignatura amb aquesta sigla.</div>');
-    box.innerHTML = html;
+    const picks = getSched().picks, mine = schedMine();
+    const pill = c => '<button type="button" class="sch-add-pill' + (picks[c] ? ' on' : '') + '" aria-pressed="' + !!picks[c] + '" onclick="schedToggle(\'' + c + '\')">' + (picks[c] ? '<i class="ti ti-check"></i>' : '<i class="ti ti-plus"></i>') + escapeHtml(c) + '</button>';
+    box.innerHTML = mine.length
+      ? '<div class="sch-add-pills">' + mine.map(pill).join('') + '</div>'
+      : '<div class="sch-add-none">No tens cap assignatura de ' + escapeHtml(schedQuatri()) + ' amb horari. Afegeix-la a les teves notes amb aquest quatrimestre i la mateixa sigla que a l\'horari de la FIB.</div>';
   }
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && document.getElementById('sched-add')) closeModal();
