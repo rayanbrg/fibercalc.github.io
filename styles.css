@@ -990,3 +990,4 @@ input, textarea, select, [contenteditable] { caret-color: auto; }
   .fr-two .avg-line-grid-label { font-size: 15px; } .fr-two .avg-line-label { font-size: 14px; }
   .fr-add .friend-search-bar button { padding: 0 12px; }
 }
+.sch-add-sub { margin: -4px 0 12px; font-size: 13px; color: var(--text-secondary); } .sch-add-sub b { color: var(--text-primary); }
