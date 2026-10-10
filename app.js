@@ -401,11 +401,34 @@
     });
     return { parts, earned, evaluated, pending, pendingCount };
   }
-  // Nota que es mostra en gran: la final si ja està tot avaluat; si no, l'acumulada
-  function cardGradeHtml(s, m) {
+  // Vista de la targeta tancada: banda amb el color de l'assignatura (sigla gran + nota) i les parts en petit
+  function cardClosedHtml(s, m) {
     const st = getStatus(s);
-    const tone = st.final ? (st.type === 'pass' ? 'ok' : st.type === 'compensable' ? 'mid' : 'bad') : '';
-    return '<span class="card-grade ' + tone + '">' + fmt(st.final ? st.grade : m.earned) + '</span>';
+    const color = getColor(s.color);
+    const sigla = s.sigla || s.name || '';
+    const grade = st.final ? st.grade : m.earned;
+    const label = st.final ? 'Nota final' : 'Acumulada';
+    let pill = '';
+    if (st.final) {
+      pill = st.type === 'pass' ? '<span class="cb-pill"><i class="ti ti-check"></i>Aprovada</span>'
+           : st.type === 'compensable' ? '<span class="cb-pill"><i class="ti ti-scale"></i>Compensable</span>'
+           : '<span class="cb-pill"><i class="ti ti-x"></i>Suspesa</span>';
+    } else if (st.secured) pill = '<span class="cb-pill"><i class="ti ti-check"></i>Assegurada</span>';
+    else if (st.impossible) pill = '<span class="cb-pill"><i class="ti ti-alert-triangle"></i>Inaccessible</span>';
+    const matricula = getMatriculaInfo(s);
+    const matChip = matricula.num > 1 ? '<span class="cb-chip"><i class="ti ti-bookmark"></i>' + matricula.num + 'a matrícula</span>' : '';
+    const MAXP = 4;
+    const shown = m.parts.slice(0, MAXP);
+    let parts = shown.map((p, i) =>
+      '<div class="cp ' + partTone(p) + (hasGrade(p) ? '' : ' empty') + '"><div class="cp-n" title="' + escapeHtml(p.name || '') + '">' + escapeHtml(p.name || ('Part ' + (i + 1))) + '</div><div class="cp-g">' + (hasGrade(p) ? fmt(parseFloat(p.grade)) : '–') + '</div></div>'
+    ).join('');
+    if (m.parts.length > MAXP) parts += '<div class="cp more"><div class="cp-n">més</div><div class="cp-g">+' + (m.parts.length - MAXP) + '</div></div>';
+    return '<div class="cb" style="background:' + color.bg + ';">' +
+      '<div class="cb-left"><div class="cb-sigla">' + escapeHtml(sigla) + '</div>' +
+        '<div class="cb-chips"><span class="cb-chip">' + escapeHtml(s.quatri || '') + '</span>' + matChip + pill + '</div></div>' +
+      '<div class="cb-right"><div class="cb-k">' + label + '</div><div class="cb-grade">' + fmt(grade) + '</div></div>' +
+      (reorderMode ? '' : '<span class="cb-chev" aria-hidden="true"><i class="ti ti-chevron-down"></i></span>') +
+    '</div>' + (parts ? '<div class="cps">' + parts + '</div>' : '');
   }
   function cardHeroHtml(s, m) {
     const st = getStatus(s);
@@ -590,9 +613,9 @@
             '<h3 class="card-name">' + escapeHtml(title) + '</h3>' +
             '<div class="card-meta"><span>' + escapeHtml(s.quatri || '') + '</span><i class="dot"></i><span>' + escapeHtml(String(s.ects || 6)) + ' ECTS</span>' + matriculaHtml + '</div>' +
           '</div>' +
-          '<span class="card-grade-wrap" data-grade>' + cardGradeHtml(s, m) + '</span>' +
           menuHtml + chevHtml +
         '</div>' +
+        '<div class="card-closed" data-closed onclick="toggleCard(\'' + s.id + '\', event)">' + cardClosedHtml(s, m) + '</div>' +
         '<div class="card-hero">' + cardHeroHtml(s, m) + '</div>' +
         '<div class="card-barwrap">' + cardBarHtml(m) + '</div>' +
         evalSelectorHtml +
@@ -851,7 +874,7 @@
     // Refresca resum, barra, estat i pistes sense tornar a dibuixar les caselles (així no es perd el cursor)
     const m = cardMetrics(s);
     card.querySelector('.card-hero').innerHTML = cardHeroHtml(s, m);
-    const gw = card.querySelector('[data-grade]'); if (gw) gw.innerHTML = cardGradeHtml(s, m);
+    const cw = card.querySelector('[data-closed]'); if (cw) cw.innerHTML = cardClosedHtml(s, m);
     card.querySelector('.card-barwrap').innerHTML = cardBarHtml(m);
     card.querySelector('.card-foot').innerHTML = cardChipHtml(s);
     m.parts.forEach(p => {
