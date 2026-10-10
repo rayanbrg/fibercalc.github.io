@@ -426,10 +426,10 @@
     return '<div class="cb" style="background:' + color.bg + ';">' +
       '<div class="cb-sigla">' + escapeHtml(sigla) + '</div>' +
       '<div class="cb-grade">' + fmt(grade) + '</div>' +
-      '<div class="cb-chips"><span class="cb-chip">' + escapeHtml(s.quatri || '') + '</span>' + matChip + pill + '</div>' +
+      '<div class="cb-chips">' + matChip + pill + '</div>' +
       '<div class="cb-k">' + label + '</div>' +
-      (reorderMode ? '' : '<span class="cb-chev" aria-hidden="true"><i class="ti ti-chevron-down"></i></span>') +
-    '</div>' + (parts ? '<div class="cps">' + parts + '</div>' : '');
+    '</div>' + (parts ? '<div class="cps">' + parts + '</div>' : '') +
+      (reorderMode ? '' : '<div class="cc-chev" aria-hidden="true"><i class="ti ti-chevron-down"></i></div>');
   }
   function cardHeroHtml(s, m) {
     const st = getStatus(s);
