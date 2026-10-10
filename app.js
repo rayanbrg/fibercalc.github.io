@@ -2412,8 +2412,6 @@
         // No hi ha res al nᅵvol: pujar les dades locals
         scheduleCloudSave();
       }
-      // Inicialitzar el snapshot d'aprovades actual perque les properes detectades siguin noves
-      cloudPassedSnapshot = buildPassedSnapshot();
     } catch (err) {
       console.error('Sync error', err);
     } finally {
@@ -2481,119 +2479,6 @@
     '</svg>';
   }
 
-  function renderRankingRow(profile, statsObj, index, isMe) {
-    const fmtEcts = n => { const r = Math.round((n || 0) * 10) / 10; return r % 1 === 0 ? String(r) : r.toFixed(1); };
-    const avgAll = statsObj && statsObj.avgAll !== null && statsObj.avgAll !== undefined ? statsObj.avgAll : null;
-    const avgPassed = statsObj && statsObj.avgPassed !== null && statsObj.avgPassed !== undefined ? statsObj.avgPassed : null;
-    const ectsApproved = statsObj ? (statsObj.ectsApproved || 0) : 0;
-    const ectsTotal = statsObj ? (statsObj.ectsTotal || 0) : 0;
-    const rankCls = index === 0 ? 'first' : (index === 1 ? 'second' : (index === 2 ? 'third' : ''));
-    const gradeCls = avgAll === null ? '' : (avgAll >= 5 ? 'pass' : 'fail');
-    const name = escapeHtml(profile.displayName || profile.username || '?');
-    const youBadge = isMe ? ' <span class="rank-you-badge">Tu</span>' : '';
-    const ringColor = avgToRingColor(avgAll);
-    const avatarHtml = profile.photoURL
-      ? '<img src="' + profile.photoURL + '" alt="" referrerpolicy="no-referrer" />'
-      : '<span class="top-item-avatar-fallback">' + userInitials(profile.displayName, profile.username) + '</span>';
-    const sparkline = buildSparklineSVG(statsObj, ringColor);
-    return '<div class="top-item">' +
-      '<div class="top-rank ' + rankCls + '">' + (index + 1) + '</div>' +
-      '<div class="top-item-content">' +
-        '<div class="top-item-avatar avatar-rank-ring" style="--avatar-ring:' + ringColor + ';">' + avatarHtml + '</div>' +
-        '<div class="top-item-info">' +
-          '<div class="top-name">' + name + youBadge + '</div>' +
-          '<div class="top-meta">Aprov. ' + fmtEcts(ectsApproved) + '/' + fmtEcts(ectsTotal) + ' ECTS \u00b7 Mitjana aprov. ' + (avgPassed !== null ? fmt(avgPassed) : '\u2014') + '</div>' +
-        '</div>' +
-        sparkline +
-      '</div>' +
-      '<div class="top-grade ' + gradeCls + '">' + (avgAll !== null ? fmt(avgAll) : '\u2014') + '</div>' +
-    '</div>';
-  }
-
-  window.renderQuatriComparison = function() {
-    const sel = document.getElementById('friend-quatri-select');
-    const out = document.getElementById('quatri-comparison');
-    if (!sel || !out) return;
-    const quatri = sel.value;
-    const filtered = friendRankingCache.filter(it => it.stats && it.stats.byQuatri && it.stats.byQuatri[quatri]);
-    if (filtered.length === 0) {
-      out.innerHTML = '<div class="friends-empty">Cap amic t\u00e9 dades d\'aquest quatrimestre.</div>';
-      return;
-    }
-    const sorted = [...filtered].sort((a, b) => {
-      const av = a.stats.byQuatri[quatri].avgAll !== null && a.stats.byQuatri[quatri].avgAll !== undefined ? a.stats.byQuatri[quatri].avgAll : -1;
-      const bv = b.stats.byQuatri[quatri].avgAll !== null && b.stats.byQuatri[quatri].avgAll !== undefined ? b.stats.byQuatri[quatri].avgAll : -1;
-      return bv - av;
-    });
-    out.innerHTML = '<div class="top-list">' + sorted.map((it, i) => renderRankingRow(it.profile, it.stats.byQuatri[quatri], i, it.isMe)).join('') + '</div>';
-  };
-
-  async function sendFriendRequest(targetUid) {
-    const myUid = fbUser.uid;
-    const id = pairId(myUid, targetUid);
-    await window.fbSetDoc(window.fbDocRef('friendships/' + id), {
-      users: [myUid, targetUid],
-      requestedBy: myUid,
-      status: 'pending',
-      createdAt: Date.now()
-    });
-  }
-
-  window.sendFriendRequestUI = async function(targetUid) {
-    try {
-      await sendFriendRequest(targetUid);
-      await window.searchFriend();
-      await renderFriendsLists();
-    } catch (err) {
-      console.error(err);
-      alert('Error enviant la sol\u00b7licitud.');
-    }
-  };
-
-  window.cancelFriendRequest = async function(otherUid) {
-    try {
-      const id = pairId(fbUser.uid, otherUid);
-      await window.fbDeleteDoc(window.fbDocRef('friendships/' + id));
-      await renderFriendsLists();
-      const resultEl = document.getElementById('friend-search-result');
-      if (resultEl && resultEl.innerHTML.trim()) await window.searchFriend();
-    } catch (err) {
-      console.error(err);
-      alert('Error cancel\u00b7lant la sol\u00b7licitud.');
-    }
-  };
-
-  window.acceptFriendRequest = async function(otherUid) {
-    try {
-      const id = pairId(fbUser.uid, otherUid);
-      const ref = window.fbDocRef('friendships/' + id);
-      const snap = await window.fbGetDoc(ref);
-      if (!snap.exists()) { await renderFriendsLists(); return; }
-      const data = snap.data();
-      data.status = 'accepted';
-      data.acceptedAt = Date.now();
-      await window.fbSetDoc(ref, data);
-      await renderFriendsLists();
-    } catch (err) {
-      console.error(err);
-      alert('Error acceptant la sol\u00b7licitud.');
-    }
-  };
-
-  window.removeFriend = async function(otherUid) {
-    if (!confirm('Deixar de ser amics? Ja no podreu veure el progr\u00e9s mutu.')) return;
-    try {
-      const id = pairId(fbUser.uid, otherUid);
-      await window.fbDeleteDoc(window.fbDocRef('friendships/' + id));
-      await renderFriendsLists();
-      const resultEl = document.getElementById('friend-search-result');
-      if (resultEl && resultEl.innerHTML.trim()) await window.searchFriend();
-    } catch (err) {
-      console.error(err);
-      alert('Error eliminant l\'amic.');
-    }
-  };
-
   window.searchFriend = async function() {
     const input = document.getElementById('friend-search-input');
     const resultEl = document.getElementById('friend-search-result');
@@ -2647,10 +2532,143 @@
     }
   };
 
+  // ===== AMICS: rànquing, cara a cara i resum =====
+  let friendMetric = 'avg';   // criteri del rànquing: 'avg' | 'avgp' | 'ects'
+  let friendH2H = null;       // uid de l'amic de la comparativa cara a cara
+  let friendQuatri = null;    // quatrimestre triat al rànquing per quatrimestre
+  const FR_COLORS = ['#6366F1', '#FB7185', '#F59E0B', '#3B82F6', '#A78BFA', '#14B8A6', '#EC4899', '#06B6D4'];
+  const FR_METRICS = {
+    avg:  { label: 'Mitjana',           get: s => s.avgAll },
+    avgp: { label: 'Mitjana aprovades', get: s => s.avgPassed },
+    ects: { label: 'ECTS aprovats',     get: s => s.ectsApproved }
+  };
+  const frFmtE = n => { const r = Math.round((n || 0) * 10) / 10; return r % 1 === 0 ? String(r) : r.toFixed(1); };
+  function frColor(it) {
+    if (it.isMe) return '#10B981';
+    const key = String((it.profile && (it.profile.username || it.profile.displayName)) || it.otherUid || '?');
+    let h = 0; for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+    return FR_COLORS[h % FR_COLORS.length];
+  }
+  function frAvatar(profile, color, size) {
+    const inner = profile.photoURL
+      ? '<img src="' + escapeHtml(profile.photoURL) + '" alt="" referrerpolicy="no-referrer" />'
+      : userInitials(profile.displayName, profile.username);
+    return '<span class="fr-av ' + (size || '') + '" style="--c:' + color + '">' + inner + '</span>';
+  }
+  function frVal(stats, metric) {
+    if (!stats) return null;
+    const v = FR_METRICS[metric].get(stats);
+    return v === null || v === undefined ? null : v;
+  }
+  function frFmtVal(v, metric) { return v === null ? '—' : (metric === 'ects' ? frFmtE(v) : fmt(v)); }
+  function frSorted(metric) {
+    return friendRankingCache.map(it => ({ it, v: frVal(it.stats, metric) }))
+      .sort((a, b) => (b.v === null ? -1 : b.v) - (a.v === null ? -1 : a.v));
+  }
+  function frName(it) { return escapeHtml(it.profile.displayName || it.profile.username || '?'); }
+
+  function frRow(it, rank, stats, metric) {
+    const v = frVal(stats, metric);
+    const color = frColor(it);
+    const tone = metric !== 'ects' && v !== null ? (v >= 5 ? 'ok' : 'bad') : '';
+    const click = it.isMe ? '' : ' role="button" tabindex="0" onclick="openH2H(\'' + it.otherUid + '\')" onkeydown="if(event.key===\'Enter\')openH2H(\'' + it.otherUid + '\')" title="Comparar cara a cara"';
+    const meta = (stats ? frFmtE(stats.ectsApproved) + '/' + frFmtE(stats.ectsTotal) + ' ECTS' : 'Sense dades') +
+      (metric === 'ects' ? '' : ' · ' + (stats && stats.avgPassed !== null && stats.avgPassed !== undefined ? 'aprov. ' + fmt(stats.avgPassed) : 'aprov. —'));
+    return '<div class="fr-row' + (it.isMe ? ' me' : ' tap') + '"' + click + '>' +
+      '<span class="fr-pos">' + rank + '</span>' + frAvatar(it.profile, color) +
+      '<div class="fr-who"><div class="fr-nm">' + frName(it) + (it.isMe ? ' <em>Tu</em>' : '') + '</div><div class="fr-mt">' + meta + '</div></div>' +
+      buildSparklineSVG(stats, color) +
+      '<span class="fr-val ' + tone + '">' + frFmtVal(v, metric) + '</span>' +
+      (it.isMe ? '<span class="fr-chv"></span>' : '<i class="ti ti-chevron-right fr-chv"></i>') + '</div>';
+  }
+
+  function renderFriendRanking() {
+    const root = document.getElementById('fr-rank');
+    if (!root) return;
+    const sorted = frSorted(friendMetric);
+    const tabs = Object.keys(FR_METRICS).map(k => '<button type="button" class="' + (k === friendMetric ? 'on' : '') + '" onclick="setFriendMetric(\'' + k + '\')">' + FR_METRICS[k].label + '</button>').join('');
+    let podium = '', restFrom = 0;
+    if (sorted.length >= 3 && sorted.slice(0, 3).every(x => x.v !== null)) {
+      const order = [1, 0, 2];
+      podium = '<div class="fr-podium">' + order.map(i => {
+        const { it, v } = sorted[i], c = frColor(it);
+        return '<div class="fr-pod p' + (i + 1) + (it.isMe ? ' me' : '') + '" style="--c:' + c + '"' + (it.isMe ? '' : ' role="button" tabindex="0" onclick="openH2H(\'' + it.otherUid + '\')"') + '>' +
+          '<span class="fr-medal">' + (i === 0 ? '<i class="ti ti-crown"></i>' : '#' + (i + 1)) + '</span>' + frAvatar(it.profile, c, 'lg') +
+          '<div class="fr-nm">' + frName(it) + '</div><div class="fr-un">@' + escapeHtml(it.profile.username || '?') + '</div>' +
+          '<div class="fr-pv ' + (metric_tone(v)) + '">' + frFmtVal(v, friendMetric) + '</div></div>';
+      }).join('') + '</div>';
+      restFrom = 3;
+    }
+    function metric_tone(v) { return friendMetric === 'ects' || v === null ? '' : (v >= 5 ? 'ok' : 'bad'); }
+    const rows = sorted.slice(restFrom).map((x, i) => frRow(x.it, restFrom + i + 1, x.it.stats, friendMetric)).join('');
+    root.innerHTML = '<div class="fr-card"><div class="fr-hd"><h3>Rànquing</h3><div class="fr-seg" role="tablist">' + tabs + '</div></div>' + podium +
+      (rows ? '<div class="fr-rows">' + rows + '</div>' : '') + '</div>';
+  }
+  window.setFriendMetric = function(m) { friendMetric = m; renderFriendRanking(); };
+
+  // ---- Cara a cara
+  function frDuel(label, a, b, scale, fmtFn, colA, colB) {
+    const w = (v) => v === null ? 0 : Math.max(4, Math.min(100, v / scale * 100));
+    const winA = a !== null && (b === null || a > b), winB = b !== null && (a === null || b > a);
+    return '<div class="fr-duel"><div class="fr-dl"><span class="' + (winA ? 'win' : '') + '">' + (a === null ? '—' : fmtFn(a)) + '</span><b>' + label + '</b><span class="' + (winB ? 'win' : '') + '">' + (b === null ? '—' : fmtFn(b)) + '</span></div>' +
+      '<div class="fr-db"><div class="l"><i style="width:' + w(a) + '%;background:' + colA + '"></i></div><div class="r"><i style="width:' + w(b) + '%;background:' + colB + '"></i></div></div></div>';
+  }
+  function renderH2H() {
+    const root = document.getElementById('fr-h2h');
+    if (!root) return;
+    const me = friendRankingCache.find(x => x.isMe), fr = friendRankingCache.find(x => !x.isMe && x.otherUid === friendH2H);
+    if (!me || !fr) { root.innerHTML = ''; return; }
+    const ca = frColor(me), cb = frColor(fr), a = me.stats || {}, b = fr.stats || {};
+    const nz = v => (v === undefined ? null : v);
+    const maxE = Math.max(a.ectsApproved || 0, b.ectsApproved || 0, 1);
+    // Quatrimestres en comú
+    const qs = Object.keys(a.byQuatri || {}).filter(q => b.byQuatri && b.byQuatri[q] && nz(a.byQuatri[q].avgAll) !== null && nz(b.byQuatri[q].avgAll) !== null)
+      .sort((x, y) => QUATRIS.indexOf(y) - QUATRIS.indexOf(x));
+    let wins = 0, losses = 0;
+    const qRows = qs.map(q => {
+      const x = a.byQuatri[q].avgAll, y = b.byQuatri[q].avgAll;
+      if (x > y) wins++; else if (y > x) losses++;
+      return '<div class="fr-qr"><span class="' + (x > y ? 'win' : '') + '">' + fmt(x) + '</span><b>' + escapeHtml(q) + '</b><span class="' + (y > x ? 'win' : '') + '">' + fmt(y) + '</span></div>';
+    }).join('');
+    const verdict = qs.length ? (wins > losses ? 'Guanyes ' + wins + ' de ' + qs.length + ' quatrimestres' : (losses > wins ? 'Perds ' + losses + ' de ' + qs.length + ' quatrimestres' : 'Empat a ' + wins + ' quatrimestres')) : 'Encara no teniu quatrimestres en comú';
+    root.innerHTML = '<div class="fr-card fr-h2h"><div class="fr-hd"><h3>Cara a cara</h3><button type="button" class="fr-x" onclick="closeH2H()" aria-label="Tancar"><i class="ti ti-x"></i></button></div>' +
+      '<div class="fr-vs">' + '<div>' + frAvatar(me.profile, ca, 'lg') + '<div class="fr-nm">Tu</div></div><span class="fr-vsb">VS</span><div>' + frAvatar(fr.profile, cb, 'lg') + '<div class="fr-nm">' + frName(fr) + '</div></div></div>' +
+      frDuel('Mitjana', nz(a.avgAll), nz(b.avgAll), 10, v => fmt(v), ca, cb) +
+      frDuel('Mitjana aprovades', nz(a.avgPassed), nz(b.avgPassed), 10, v => fmt(v), ca, cb) +
+      frDuel('ECTS aprovats', nz(a.ectsApproved), nz(b.ectsApproved), maxE, frFmtE, ca, cb) +
+      '<div class="fr-verdict">' + verdict + '</div>' + (qRows ? '<div class="fr-qrs">' + qRows + '</div>' : '') + '</div>';
+  }
+  window.openH2H = function(uid) {
+    friendH2H = uid; renderH2H();
+    const el = document.getElementById('fr-h2h');
+    if (el) el.scrollIntoView({ behavior: REDUCED_MOTION ? 'auto' : 'smooth', block: 'nearest' });
+  };
+  window.closeH2H = function() { friendH2H = null; renderH2H(); };
+
+  // ---- Rànquing per quatrimestre
+  function frQuatriList() {
+    const set = new Set();
+    friendRankingCache.forEach(it => it.stats && it.stats.byQuatri && Object.keys(it.stats.byQuatri).forEach(q => set.add(q)));
+    return [...set].sort((a, b) => QUATRIS.indexOf(a) - QUATRIS.indexOf(b));
+  }
+  window.setFriendQuatri = function(q) { friendQuatri = q; renderQuatriComparison(); };
+  window.renderQuatriComparison = function() {
+    const root = document.getElementById('fr-quatri');
+    if (!root) return;
+    const qs = frQuatriList();
+    if (!qs.length) { root.innerHTML = ''; return; }
+    if (!friendQuatri || !qs.includes(friendQuatri)) friendQuatri = qs[0];
+    const chips = qs.map(q => '<button type="button" class="fr-chip' + (q === friendQuatri ? ' on' : '') + '" onclick="setFriendQuatri(\'' + q + '\')">' + escapeHtml(q) + '</button>').join('');
+    const list = friendRankingCache.filter(it => it.stats && it.stats.byQuatri && it.stats.byQuatri[friendQuatri])
+      .sort((a, b) => (frVal(b.stats.byQuatri[friendQuatri], 'avg') ?? -1) - (frVal(a.stats.byQuatri[friendQuatri], 'avg') ?? -1));
+    root.innerHTML = '<div class="fr-card"><div class="fr-hd"><h3>Rànquing per quatrimestre</h3></div><div class="fr-chips">' + chips + '</div>' +
+      '<div class="fr-rows">' + list.map((it, i) => frRow(it, i + 1, it.stats.byQuatri[friendQuatri], 'avg')).join('') + '</div></div>';
+  };
+
   async function renderFriendsLists() {
     const container = document.getElementById('friend-lists');
     if (!container) return;
-    container.innerHTML = '<div class="friends-empty">Carregant...</div>';
+    if (!container.innerHTML.trim()) container.innerHTML = '<div class="fr-card fr-loading"><i class="ti ti-loader-2"></i>Carregant els teus amics...</div>';
 
     try {
       const myUid = fbUser.uid;
@@ -2668,40 +2686,33 @@
         else received.push(item);
       });
 
-      const allOthers = [...received, ...sent, ...friends];
       const profiles = {};
-      await Promise.all(allOthers.map(async item => {
+      await Promise.all([...received, ...sent, ...friends].map(async item => {
         if (profiles[item.otherUid]) return;
-        const snap = await window.fbGetDoc(window.fbDocRef('profiles/' + item.otherUid));
-        profiles[item.otherUid] = snap.exists() ? snap.data() : { username: '???' };
+        const s = await window.fbGetDoc(window.fbDocRef('profiles/' + item.otherUid));
+        profiles[item.otherUid] = s.exists() ? s.data() : { username: '???' };
       }));
+      const prof = uid => profiles[uid] || { username: '???' };
+      const reqCard = (item, actions) => '<div class="fr-req">' + frAvatar(prof(item.otherUid), frColor({ profile: prof(item.otherUid), otherUid: item.otherUid })) +
+        '<div class="fr-who"><div class="fr-nm">' + escapeHtml(prof(item.otherUid).displayName || prof(item.otherUid).username || '?') + '</div><div class="fr-mt">@' + escapeHtml(prof(item.otherUid).username || '?') + '</div></div><div class="fr-acts-b">' + actions + '</div></div>';
 
       let html = '';
 
-      if (received.length > 0) {
-        html += '<div class="friends-section-title"><i class="ti ti-user-plus"></i>Sol\u00b7licituds rebudes</div>' +
-          '<div class="friend-list">' +
-          received.map(item => renderFriendCard(profiles[item.otherUid],
+      // Sol·licituds rebudes: ben visibles a dalt
+      if (received.length) {
+        html += '<div class="fr-card fr-requests"><div class="fr-hd"><h3><i class="ti ti-user-plus"></i>Sol·licituds d\'amistat <span class="fr-count">' + received.length + '</span></h3></div>' +
+          received.map(item => reqCard(item,
             '<button class="btn btn-primary" onclick="acceptFriendRequest(\'' + item.otherUid + '\')">Acceptar</button>' +
-            '<button class="btn" onclick="cancelFriendRequest(\'' + item.otherUid + '\')">Rebutjar</button>'
-          )).join('') +
-          '</div>';
+            '<button class="btn" onclick="cancelFriendRequest(\'' + item.otherUid + '\')">Rebutjar</button>')).join('') + '</div>';
       }
 
-      if (sent.length > 0) {
-        html += '<div class="friends-section-title"><i class="ti ti-send"></i>Sol\u00b7licituds enviades</div>' +
-          '<div class="friend-list">' +
-          sent.map(item => renderFriendCard(profiles[item.otherUid], '<button class="btn" onclick="cancelFriendRequest(\'' + item.otherUid + '\')">Cancel\u00b7lar</button>')).join('') +
-          '</div>';
-      }
-
-      html += '<div class="friends-section-title"><i class="ti ti-users"></i>Amics</div>';
       if (friends.length === 0) {
-        html += '<div class="friends-empty">Encara no tens amics. Cerca\'n un pel seu nom d\'usuari!</div>';
+        html += '<div class="fr-card fr-empty"><div class="fr-empty-ic"><i class="ti ti-users"></i></div><h4>Encara no tens amics</h4>' +
+          '<p>Cerca el nom d\'usuari d\'un company i podreu comparar mitjanes, ECTS i evolució quatrimestre a quatrimestre.</p></div>';
+        friendRankingCache = []; friendH2H = null;
       } else {
         const myStats = computeProfileStats();
         const myProfile = { displayName: state.userName || fbUser.displayName || 'Tu', username: state.username, photoURL: fbUser.photoURL || '' };
-
         const items = [{ profile: myProfile, stats: myStats, isMe: true, otherUid: null }];
         await Promise.all(friends.map(async item => {
           let stats = null;
@@ -2709,75 +2720,60 @@
             const statsSnap = await window.fbGetDoc(window.fbDocRef('profiles/' + item.otherUid + '/private/stats'));
             stats = statsSnap.exists() ? statsSnap.data().stats : null;
           } catch (e) { console.error(e); }
-          items.push({ profile: profiles[item.otherUid], stats, isMe: false, otherUid: item.otherUid });
+          items.push({ profile: prof(item.otherUid), stats, isMe: false, otherUid: item.otherUid });
         }));
-
         friendRankingCache = items;
+        if (friendH2H && !items.some(x => x.otherUid === friendH2H)) friendH2H = null;
 
-        const sortKey = it => (it.stats && it.stats.avgAll !== null && it.stats.avgAll !== undefined) ? it.stats.avgAll : -1;
-        const sorted = [...items].sort((a, b) => sortKey(b) - sortKey(a));
-
-        // Punt 4: badge de posicio - calcular i comparar amb lultima posicio guardada
-        const myIdx = sorted.findIndex(it => it.isMe);
-        const myPos = myIdx + 1;
-        const total = sorted.length;
+        // Resum: la teva posició segons la mitjana
+        const byAvg = frSorted('avg');
+        const myIdx = byAvg.findIndex(x => x.it.isMe), myPos = myIdx + 1, total = byAvg.length;
+        let banner = '';
         const lastPosKey = 'fibercalc-last-rank-pos';
         let lastPos = null;
-        try { const stored = localStorage.getItem(lastPosKey); if (stored !== null) lastPos = parseInt(stored, 10); } catch (e) {}
-        let positionBanner = '';
-        if (myPos > 0 && total > 1) {
-          if (lastPos === null) {
-            // primera vegada, nomes guardar
-          } else if (myPos < lastPos) {
-            const cls = myPos === 1 ? 'promote-top' : '';
-            const msg = myPos === 1 ? 'Ets el número 1 del rànquing!' : 'Has pujat al #' + myPos;
-            positionBanner = '<div class="position-banner ' + cls + '" id="position-banner">' +
-              '<i class="ti ti-trophy"></i>' +
-              '<div class="position-banner-text"><div class="position-banner-title">' + msg + '</div>' +
-              '<div class="position-banner-sub">Abans estaves al #' + lastPos + '</div></div>' +
-              '<button class="position-banner-close" onclick="dismissPositionBanner()" aria-label="Tancar"><i class="ti ti-x"></i></button>' +
-            '</div>';
-          } else if (myPos > lastPos) {
-            positionBanner = '<div class="position-banner demote" id="position-banner">' +
-              '<i class="ti ti-trending-down"></i>' +
-              '<div class="position-banner-text"><div class="position-banner-title">Has baixat al #' + myPos + '</div>' +
-              '<div class="position-banner-sub">Abans estaves al #' + lastPos + '</div></div>' +
-              '<button class="position-banner-close" onclick="dismissPositionBanner()" aria-label="Tancar"><i class="ti ti-x"></i></button>' +
-            '</div>';
+        try { const st = localStorage.getItem(lastPosKey); if (st !== null) lastPos = parseInt(st, 10); } catch (e) {}
+        if (lastPos !== null && total > 1 && myPos !== lastPos) {
+          const up = myPos < lastPos;
+          banner = '<div class="position-banner ' + (up ? (myPos === 1 ? 'promote-top' : '') : 'demote') + '" id="position-banner"><i class="ti ' + (up ? 'ti-trophy' : 'ti-trending-down') + '"></i>' +
+            '<div class="position-banner-text"><div class="position-banner-title">' + (up ? (myPos === 1 ? 'Ets el número 1 del rànquing!' : 'Has pujat al #' + myPos) : 'Has baixat al #' + myPos) + '</div>' +
+            '<div class="position-banner-sub">Abans estaves al #' + lastPos + '</div></div>' +
+            '<button class="position-banner-close" onclick="dismissPositionBanner()" aria-label="Tancar"><i class="ti ti-x"></i></button></div>';
+        }
+        try { localStorage.setItem(lastPosKey, String(myPos)); } catch (e) {}
+        let gap = '';
+        const myV = byAvg[myIdx] ? byAvg[myIdx].v : null;
+        if (myV !== null && total > 1) {
+          if (myPos === 1) {
+            const nx = byAvg[1];
+            gap = nx && nx.v !== null ? 'Vas al davant: <b>' + frName(nx.it) + '</b> és a ' + fmt(myV - nx.v) + ' punts.' : 'Vas al davant del rànquing.';
+          } else {
+            const up = byAvg[myIdx - 1];
+            gap = up.v !== null ? 'Et falten <b>' + fmt(up.v - myV) + '</b> punts per passar a <b>' + frName(up.it) + '</b>.' : '';
           }
-          try { localStorage.setItem(lastPosKey, String(myPos)); } catch (e) {}
         }
-        html += positionBanner;
+        html = banner + html +
+          '<div class="fr-card fr-summary"><div class="fr-sum-l"><span class="fr-k">La teva posició</span><div class="fr-pos-big">#' + myPos + '<small>de ' + total + '</small></div><div class="fr-gap">' + gap + '</div></div>' +
+          '<div class="fr-sum-r"><div><span class="fr-k">Mitjana</span><div class="fr-mv ' + (myV !== null ? (myV >= 5 ? 'ok' : 'bad') : '') + '">' + (myV !== null ? fmt(myV) : '—') + '</div></div>' +
+          '<div><span class="fr-k">ECTS aprovats</span><div class="fr-mv">' + frFmtE(myStats.ectsApproved) + '</div></div>' +
+          '<div><span class="fr-k">Amics</span><div class="fr-mv">' + friends.length + '</div></div></div></div>' +
+          '<div id="fr-rank"></div><div id="fr-h2h"></div>' +
+          '<div class="fr-two"><div class="fr-card"><div class="fr-hd"><h3>Evolució comparada</h3><span class="fr-sub">Mitjana per quatrimestre</span></div><div id="compare-chart-container"></div></div><div id="activity-feed-section"></div></div>' +
+          '<div id="fr-quatri"></div>';
 
-        html += '<div class="top-list">' + sorted.map((it, i) => renderRankingRow(it.profile, it.stats, i, it.isMe)).join('') + '</div>';
-
-        // Punt 3: Grafica comparativa per quatris (linies superposades)
-        const myQuatris = Object.keys(myStats.byQuatri || {}).sort((a, b) => QUATRIS.indexOf(b) - QUATRIS.indexOf(a));
-        if (myQuatris.length >= 2) {
-          html += '<div class="friends-section-title" style="margin-top:20px;"><i class="ti ti-chart-line"></i>Evolució comparada</div>' +
-            '<div id="compare-chart-container"></div>';
-        }
-
-        // Comparativa per quatri (taula existent)
-        if (myQuatris.length > 0) {
-          html += '<div class="friends-section-title" style="margin-top:20px;"><i class="ti ti-calendar-stats"></i>Rànquing per quatrimestre</div>' +
-            '<select id="friend-quatri-select" class="friend-quatri-select" onchange="renderQuatriComparison()">' +
-            myQuatris.map(q => '<option value="' + q + '">' + q + '</option>').join('') +
-            '</select>' +
-            '<div id="quatri-comparison" style="margin-top:10px;"></div>';
-        }
-
-        html += '<div class="friends-section-title" style="margin-top:20px;"><i class="ti ti-settings"></i>Gestionar amics</div>';
-        html += '<div class="friend-list">' +
-          friends.map(item => renderFriendCard(profiles[item.otherUid],
-            '<button class="btn" onclick="removeFriend(\'' + item.otherUid + '\')">Eliminar</button>'
-          )).join('') +
-          '</div>';
+        // Gestió
+        html += '<details class="fr-card fr-manage"><summary><i class="ti ti-settings"></i>Gestiona els teus amics<span class="fr-count">' + (friends.length + sent.length) + '</span><i class="ti ti-chevron-down fr-dd"></i></summary>' +
+          friends.map(item => reqCard(item, '<button class="btn" onclick="removeFriend(\'' + item.otherUid + '\')">Eliminar</button>')).join('') +
+          sent.map(item => reqCard(item, '<span class="friend-status-badge">Pendent</span><button class="btn" onclick="cancelFriendRequest(\'' + item.otherUid + '\')">Cancel·lar</button>')).join('') + '</details>';
+        container.innerHTML = html;
+        renderFriendRanking(); renderH2H(); renderQuatriComparison();
+        if (document.getElementById('compare-chart-container')) renderCompareChart();
+        renderActivityFeed();
+        return;
       }
-
+      if (sent.length) {
+        html += '<div class="fr-card"><div class="fr-hd"><h3>Sol·licituds enviades</h3></div>' + sent.map(item => reqCard(item, '<button class="btn" onclick="cancelFriendRequest(\'' + item.otherUid + '\')">Cancel·lar</button>')).join('') + '</div>';
+      }
       container.innerHTML = html;
-      if (document.getElementById('friend-quatri-select')) renderQuatriComparison();
-      if (document.getElementById('compare-chart-container')) renderCompareChart();
     } catch (err) {
       console.error(err);
       container.innerHTML = '<div class="friends-empty">Error carregant els amics.</div>';
@@ -2791,7 +2787,10 @@
 
   function renderCompareChart() {
     const container = document.getElementById('compare-chart-container');
-    if (!container || !friendRankingCache || friendRankingCache.length === 0) return;
+    if (!container) return;
+    const card = container.closest('.fr-card');
+    if (card) card.style.display = 'none';
+    if (!friendRankingCache || friendRankingCache.length === 0) return;
     // Recollir tots els quatris comuns (els meus + els d'algun amic)
     const meStats = friendRankingCache.find(it => it.isMe);
     if (!meStats || !meStats.stats || !meStats.stats.byQuatri) return;
@@ -2801,7 +2800,7 @@
     // Per cada item, valors a cada quatri (null si no en t)
     const colorPalette = ['#0EBB80', '#3B82F6', '#A78BFA', '#F59E0B', '#EF4444', '#14B8A6', '#EC4899'];
     const series = friendRankingCache.map((item, i) => {
-      const color = item.isMe ? '#0EBB80' : colorPalette[(i % (colorPalette.length - 1)) + 1];
+      const color = frColor(item);
       const values = myQuatris.map(q => {
         const bq = item.stats && item.stats.byQuatri && item.stats.byQuatri[q];
         return bq && bq.avgAll !== null && bq.avgAll !== undefined ? bq.avgAll : null;
@@ -2856,6 +2855,7 @@
 
     const legend = series.map(s => '<div class="compare-legend-item"><div class="compare-legend-dot" style="background:' + s.color + ';"></div>' + escapeHtml(s.name) + (s.isMe ? ' (Tu)' : '') + '</div>').join('');
 
+    if (card) card.style.display = '';
     container.innerHTML = '<div class="compare-chart-wrap">' +
       '<svg class="avg-line-svg" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="xMidYMid meet">' +
         gridHtml +
@@ -2879,16 +2879,15 @@
     }
 
     root.innerHTML =
-      '<div class="friend-search-bar">' +
-        '<input type="text" id="friend-search-input" placeholder="nom_usuari" maxlength="20" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,\'\')" onkeydown="if(event.key===\'Enter\')searchFriend()" />' +
-        '<button class="btn btn-primary" onclick="searchFriend()"><i class="ti ti-search"></i>Cercar</button>' +
-      '</div>' +
-      '<div id="friend-search-result"></div>' +
-      '<div id="friend-lists"></div>' +
-      '<div id="activity-feed-section"></div>';
+      '<div class="fr">' +
+        '<div class="fr-card fr-add"><div class="friend-search-bar">' +
+          '<span class="fr-at">@</span><input type="text" id="friend-search-input" placeholder="Afegeix un amic pel seu nom d\'usuari" maxlength="20" autocomplete="off" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,\'\')" onkeydown="if(event.key===\'Enter\')searchFriend()" />' +
+          '<button class="btn btn-primary" onclick="searchFriend()"><i class="ti ti-search"></i>Cercar</button>' +
+        '</div><div id="friend-search-result"></div></div>' +
+        '<div id="friend-lists"></div>' +
+      '</div>';
 
     await renderFriendsLists();
-    await renderActivityFeed();
   }
 
   async function renderActivityFeed() {
@@ -2950,21 +2949,19 @@
         return 'fa ' + Math.floor(diffD / 30) + ' mesos';
       }
 
-      let html = '<div class="friends-section-title" style="margin-top:24px;"><i class="ti ti-activity"></i>Activitat recent</div>' +
-        '<div class="activity-feed">';
+      let html = '<div class="fr-card fr-act"><div class="fr-hd"><h3>Activitat recent</h3></div><div class="fr-acts">';
       activities.forEach(act => {
         const prof = profilesByUid[act.uid] || { username: '???' };
         const name = escapeHtml(prof.displayName || prof.username || '?');
         if (act.type === 'approved') {
-          const grade = act.grade !== null && act.grade !== undefined ? ' (' + fmt(act.grade) + ')' : '';
-          html += '<div class="activity-item">' +
-            '<div class="activity-icon approve"><i class="ti ti-circle-check"></i></div>' +
-            '<div><div class="activity-text"><strong>' + name + '</strong> ha aprovat <strong>' + escapeHtml(act.sigla || '') + '</strong>' + grade + '</div>' +
-            '<div class="activity-time">' + formatRelativeTime(act.createdAt) + ' · ' + escapeHtml(act.quatri || '') + '</div></div>' +
-          '</div>';
+          const g = act.grade !== null && act.grade !== undefined ? act.grade : null;
+          html += '<div class="fr-ai">' + frAvatar(prof, frColor({ profile: prof, otherUid: act.uid }), 'sm') +
+            '<div class="fr-at-txt"><div><b>' + name + '</b> ha aprovat <b>' + escapeHtml(act.sigla || '') + '</b></div>' +
+            '<small>' + formatRelativeTime(act.createdAt) + ' · ' + escapeHtml(act.quatri || '') + '</small></div>' +
+            (g !== null ? '<span class="fr-ag">' + fmt(g) + '</span>' : '') + '</div>';
         }
       });
-      html += '</div>';
+      html += '</div></div>';
       root.innerHTML = html;
     } catch (err) {
       console.error('renderActivityFeed error', err);
