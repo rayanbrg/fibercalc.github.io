@@ -1374,6 +1374,8 @@
     else title = 'Amics';
     document.getElementById('page-title').textContent = title;
     document.getElementById('hero').classList.toggle('compact', page !== 'notes');
+    // L'horari té el seu propi quatrimestre: el filtre de quatrimestres ("Totes"...) no hi pinta res
+    document.getElementById('filter-bar').style.display = page === 'schedule' ? 'none' : '';
     if (page === 'stats') renderStats();
     if (page === 'calendar') renderCalendar();
     if (page === 'schedule') renderSchedule();
