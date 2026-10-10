@@ -126,7 +126,7 @@
   }
 
   function loadTheme() {
-    const t = localStorage.getItem(THEME_KEY) || 'light';
+    const t = localStorage.getItem(THEME_KEY) || 'dark';
     document.documentElement.setAttribute('data-theme', t);
     updateThemeIcon(t);
   }
@@ -194,7 +194,7 @@
   };
 
   window.toggleTheme = function() {
-    const cur = document.documentElement.getAttribute('data-theme') || 'light';
+    const cur = document.documentElement.getAttribute('data-theme') || 'dark';
     const next = cur === 'light' ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem(THEME_KEY, next);
@@ -1973,8 +1973,9 @@
         const g = calcGrade(s);
         const st = getStatus(s);
         if (!st.final) return;
-        if (!byQ[s.quatri]) byQ[s.quatri] = { grades: [], ects: 0, passedEcts: 0 };
+        if (!byQ[s.quatri]) byQ[s.quatri] = { grades: [], ects: 0, passedEcts: 0, subs: [] };
         byQ[s.quatri].grades.push(g);
+        byQ[s.quatri].subs.push({ g, color: getColor(s.color).bg, sigla: s.sigla || s.name || '' });
         const e = parseFloat(s.ects) || 0;
         byQ[s.quatri].ects += e;
         if (st.type === 'pass' || st.type === 'compensable') byQ[s.quatri].passedEcts += e;
@@ -1986,7 +1987,7 @@
         const d = byQ[q];
         const avg = d.grades.length > 0 ? (d.grades.reduce((a,b)=>a+b,0) / d.grades.length) : null;
         acc += d.passedEcts;
-        quatriData.push({ quatri: q, avg, ects: d.ects, passedEcts: d.passedEcts, accEcts: acc });
+        quatriData.push({ quatri: q, avg, ects: d.ects, passedEcts: d.passedEcts, accEcts: acc, subs: d.subs });
       });
     }
 
@@ -2015,393 +2016,96 @@
     const circC = 2 * Math.PI * circR;
     const circOffset = circC - (circPct => (circPct / 100) * circC)(careerPct);
 
-    // === HTML ===
+    // === HTML (disseny nou) ===
+    const gtone = g => g === null || g === undefined ? '' : (g >= 5 ? 'ok' : 'bad');
     let html = toggleHtml;
+    html += '<div class="stx">';
 
-    // 1. Cercle de progres (sempre tota la carrera)
-    html += '<div class="stat-block span-4">' +
-      '<div class="stat-block-header">' +
-        '<h3 class="stat-block-title"><i class="ti ti-school"></i>Progrés de la carrera</h3>' +
-      '</div>' +
-      '<div class="progress-circle-wrap">' +
-        '<div class="progress-circle">' +
-          '<svg width="160" height="160">' +
-            '<circle class="progress-circle-track" cx="80" cy="80" r="' + circR + '" stroke-width="12" />' +
-            '<circle class="progress-circle-bar" cx="80" cy="80" r="' + circR + '" stroke-width="12" stroke-dasharray="' + circC + '" stroke-dashoffset="' + circOffset + '" />' +
-          '</svg>' +
-          '<div class="progress-circle-center">' +
-            '<div class="progress-circle-value">' + Math.round(careerPct) + '%</div>' +
-            '<div class="progress-circle-label">Aprovats</div>' +
-            '<div class="progress-circle-sub">' + fmtEcts(careerPassed) + ' / ' + fmtEcts(careerEcts) + ' ECTS</div>' +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-      (career ? '<div class="stat-block-subtitle" style="text-align:center;">' + escapeHtml(career.name) + '</div>' :
-        '<div class="stat-block-subtitle" style="text-align:center;">Tria la teva carrera per personalitzar</div>') +
-    '</div>';
-
-    // 2. Mitjana del filtre + numero d'assignatures
-    html += '<div class="stat-block span-4">' +
-      '<div class="stat-block-header">' +
-        '<h3 class="stat-block-title"><i class="ti ti-chart-line"></i>Mitjana</h3>' +
-        '<div class="stat-block-subtitle">' + (activeFilter === 'ALL' ? 'Tota la carrera' : activeFilter) + '</div>' +
-      '</div>' +
-      '<div style="display:flex;flex-direction:column;gap:14px;flex:1;justify-content:center;">' +
-        '<div class="big-number-row">' +
-          '<div>' +
-            '<div class="big-number" style="color:' + (avgFinal !== null && avgFinal >= 5 ? 'var(--accent)' : (avgFinal !== null ? '#EF4444' : 'var(--text-tertiary)')) + ';">' + (avgFinal !== null ? fmt(avgFinal) : '—') + '</div>' +
-            '<div class="big-number-label">de ' + finalGrades.length + ' assignatures finalitzades</div>' +
-          '</div>' +
-        '</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
-          '<div><div class="big-number" style="font-size:24px;">' + counts.pass + '</div><div class="big-number-label" style="color:var(--accent);">Aprovades</div></div>' +
-          '<div><div class="big-number" style="font-size:24px;">' + counts.pending + '</div><div class="big-number-label" style="color:#F59E0B;">Pendents</div></div>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-
-    // 3. Donut d'estats
-    const totalFinal = counts.pass + counts.compensable + counts.fail;
-    const totalAll = totalFinal + counts.pending;
-    html += '<div class="stat-block span-4">' +
-      '<div class="stat-block-header">' +
-        '<h3 class="stat-block-title"><i class="ti ti-chart-donut-2"></i>Estats</h3>' +
-      '</div>';
-
-    if (totalAll === 0) {
-      html += '<div style="padding:20px;text-align:center;color:var(--text-tertiary);font-size:13px;">Sense dades</div>';
-    } else {
-      const donutR = 55;
-      const donutC = 2 * Math.PI * donutR;
-      let donutOffset = 0;
-      const segments = [
-        { val: counts.pass, color: '#0EBB80', label: 'Aprovades' },
-        { val: counts.compensable, color: '#F59E0B', label: 'Compensables' },
-        { val: counts.fail, color: '#EF4444', label: 'Suspeses' },
-        { val: counts.pending, color: '#A1A1A6', label: 'Pendents' }
-      ];
-      let segmentsHtml = '';
-      segments.forEach(seg => {
-        if (seg.val === 0) return;
-        const segLen = (seg.val / totalAll) * donutC;
-        segmentsHtml += '<circle cx="70" cy="70" r="' + donutR + '" fill="none" stroke="' + seg.color + '" stroke-width="18" stroke-dasharray="' + segLen + ' ' + (donutC - segLen) + '" stroke-dashoffset="' + (-donutOffset) + '" style="transition:stroke-dasharray 1s ease-out;" />';
-        donutOffset += segLen;
-      });
-      const legendHtml = segments.filter(s => s.val > 0).map(seg =>
-        '<div class="donut-legend-item">' +
-          '<div class="donut-legend-dot" style="background:' + seg.color + ';"></div>' +
-          '<span class="donut-legend-label">' + seg.label + '</span>' +
-          '<span class="donut-legend-value">' + seg.val + '</span>' +
-        '</div>'
-      ).join('');
-      html += '<div class="donut-wrap">' +
-        '<div class="donut">' +
-          '<svg width="140" height="140">' + segmentsHtml + '</svg>' +
-          '<div class="donut-center">' +
-            '<div class="donut-center-value">' + totalAll + '</div>' +
-            '<div class="donut-center-label">Assignatures</div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="donut-legend">' + legendHtml + '</div>' +
-      '</div>';
+    // -- KPIs
+    const qd = quatriData.filter(q => q.avg !== null);
+    let deltaHtml = '';
+    if (qd.length >= 2) {
+      const d = qd[qd.length - 1].avg - qd[qd.length - 2].avg;
+      if (Math.abs(d) >= 0.05) deltaHtml = '<span class="st-delta ' + (d > 0 ? 'up' : 'dn') + '"><i class="ti ' + (d > 0 ? 'ti-trending-up' : 'ti-trending-down') + '"></i>' + (d > 0 ? '+' : '') + fmt(d) + ' vs. quatri anterior</span>';
     }
-    html += '</div>';
-
-    // 4. Histograma de notes (distribuci)
-    const maxHisto = Math.max(...histogram, 1);
-    html += '<div class="stat-block span-6">' +
-      '<div class="stat-block-header">' +
-        '<h3 class="stat-block-title"><i class="ti ti-chart-bar"></i>Distribució de notes</h3>' +
-        '<div class="stat-block-subtitle">' + finalGrades.length + ' finalitzades</div>' +
-      '</div>' +
-      '<div class="histogram">' +
-        histogram.map((v, i) => {
-          const h = (v / maxHisto) * 100;
-          return '<div class="histo-bar r' + (i+1) + '" style="height:' + h + '%;">' +
-            (v > 0 ? '<div class="histo-value">' + v + '</div>' : '') +
-            '</div>';
-        }).join('') +
-      '</div>' +
-      '<div class="histo-labels">' +
-        '<div class="histo-label">0–4</div>' +
-        '<div class="histo-label">4–5</div>' +
-        '<div class="histo-label">5–7</div>' +
-        '<div class="histo-label">7–10</div>' +
-      '</div>' +
+    const best = qd.length ? qd.reduce((m, q) => q.avg > m.avg ? q : m, qd[0]) : null;
+    const worst = qd.length > 1 ? qd.reduce((m, q) => q.avg < m.avg ? q : m, qd[0]) : null;
+    const careerSegs = quatriData.filter(q => q.passedEcts > 0).map((q, i, arr) => '<i style="flex:' + q.passedEcts + ';opacity:' + (1 - 0.6 * (arr.length - 1 - i) / Math.max(arr.length - 1, 1)).toFixed(2) + '"></i>').join('');
+    const remaining = Math.max(careerEcts - careerPassed, 0);
+    const passedCount = counts.pass + counts.compensable;
+    const totalAll = counts.pass + counts.compensable + counts.fail + counts.pending;
+    html += '<div class="st-kpis">' +
+      '<div class="st-card st-kpi"><span class="st-k">Mitjana</span><div class="st-big ' + gtone(avgFinal) + '">' + (avgFinal !== null ? fmt(avgFinal) : '—') + '</div>' + deltaHtml +
+        '<span class="st-sub">' + finalGrades.length + (finalGrades.length === 1 ? ' assignatura finalitzada' : ' assignatures finalitzades') + '</span></div>' +
+      '<div class="st-card st-kpi"><span class="st-k">Crèdits aprovats</span><div class="st-big">' + fmtEcts(careerPassed) + '<small>/ ' + fmtEcts(careerEcts) + '</small></div>' +
+        '<span class="st-sub">' + (career ? escapeHtml(career.short) + ' · ' : '') + Math.round(careerPct) + '% de la carrera</span>' +
+        '<div class="st-pbar st-pbar-acc">' + careerSegs + '<i class="rest" style="flex:' + remaining + '"></i></div></div>' +
+      '<div class="st-card st-kpi"><span class="st-k">Aprovades</span><div class="st-big">' + passedCount + '<small>/ ' + totalAll + '</small></div>' +
+        '<span class="st-sub">' + (counts.compensable ? counts.compensable + ' compensable · ' : '') + counts.fail + ' suspeses · ' + counts.pending + ' pendents</span>' +
+        '<div class="st-pbar">' +
+          (counts.pass ? '<i style="flex:' + counts.pass + ';background:#10B981"></i>' : '') +
+          (counts.compensable ? '<i style="flex:' + counts.compensable + ';background:#F59E0B"></i>' : '') +
+          (counts.fail ? '<i style="flex:' + counts.fail + ';background:#F87171"></i>' : '') +
+          (counts.pending ? '<i class="rest" style="flex:' + counts.pending + '"></i>' : '') +
+        '</div></div>' +
+      '<div class="st-card st-kpi"><span class="st-k">Millor quatri</span>' + (best ?
+        '<div class="st-big ' + gtone(best.avg) + '">' + fmt(best.avg) + '</div><span class="st-sub">' + best.quatri + ' · ' + fmtEcts(best.passedEcts) + ' ECTS aprovats</span><span class="st-delta up" style="margin-top:auto"><i class="ti ti-star"></i>Estrella</span>' :
+        '<div class="st-big off">—</div><span class="st-sub">Encara no hi ha cap quatrimestre finalitzat</span>') + '</div>' +
     '</div>';
 
-    // 5. Top millors i pitjors
-    html += '<div class="stat-block span-6">' +
-      '<div class="stat-block-header">' +
-        '<h3 class="stat-block-title"><i class="ti ti-trophy"></i>Top notes</h3>' +
-      '</div>';
-    if (top3.length === 0) {
-      html += '<div style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:13px;">Cap assignatura finalitzada encara</div>';
-    } else {
-      html += '<div style="font-size:11px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:-4px;">Millors</div>';
-      html += '<div class="top-list">' +
-        top3.map((it, i) => {
-          const rankCls = i === 0 ? 'first' : (i === 1 ? 'second' : 'third');
-          const gradeCls = it.status === 'pass' ? 'pass' : (it.status === 'compensable' ? 'warn' : 'fail');
-          return '<div class="top-item">' +
-            '<div class="top-rank ' + rankCls + '">' + (i+1) + '</div>' +
-            '<div><div class="top-name">' + escapeHtml(it.sigla) + (it.name && it.name !== it.sigla ? ' — ' + escapeHtml(it.name) : '') + '</div>' +
-            '<div class="top-meta">' + escapeHtml(it.quatri) + '</div></div>' +
-            '<div class="top-grade ' + gradeCls + '">' + fmt(it.grade) + '</div>' +
-          '</div>';
-        }).join('') +
-      '</div>';
-
-      if (bottom3.length > 0 && allGraded.length > 3) {
-        html += '<div style="font-size:11px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-top:8px;margin-bottom:-4px;">Pitjors</div>';
-        html += '<div class="top-list">' +
-          bottom3.map(it => {
-            const gradeCls = it.status === 'pass' ? 'pass' : (it.status === 'compensable' ? 'warn' : 'fail');
-            return '<div class="top-item">' +
-              '<div class="top-rank">•</div>' +
-              '<div><div class="top-name">' + escapeHtml(it.sigla) + (it.name && it.name !== it.sigla ? ' — ' + escapeHtml(it.name) : '') + '</div>' +
-              '<div class="top-meta">' + escapeHtml(it.quatri) + '</div></div>' +
-              '<div class="top-grade ' + gradeCls + '">' + fmt(it.grade) + '</div>' +
-            '</div>';
-          }).join('') +
-        '</div>';
-      }
-    }
-    html += '</div>';
-
-    // 6. Mitjana per quatri (nomes si activeFilter == ALL)
-    if (showByQuatri && quatriData.length > 0) {
-      // Quatri estrella i pitjor
-      const validQuatris = quatriData.filter(q => q.avg !== null);
-      if (validQuatris.length >= 2) {
-        const best = validQuatris.reduce((a, b) => (b.avg > a.avg ? b : a));
-        const worst = validQuatris.reduce((a, b) => (b.avg < a.avg ? b : a));
-        const fmtEcts = n => { const r = Math.round((n || 0) * 10) / 10; return r % 1 === 0 ? String(r) : r.toFixed(1); };
-        html += '<div class="stat-block span-6">' +
-          '<div class="stat-block-header">' +
-            '<h3 class="stat-block-title"><i class="ti ti-star"></i>Quatri estrella i pitjor quatri</h3>' +
-          '</div>' +
-          '<div class="star-quatri-block">' +
-            '<div class="star-quatri-card best">' +
-              '<div class="star-quatri-label"><i class="ti ti-trophy"></i>Estrella</div>' +
-              '<div class="star-quatri-name">' + escapeHtml(best.quatri) + '</div>' +
-              '<div class="star-quatri-grade">' + fmt(best.avg) + '</div>' +
-              '<div class="star-quatri-meta">' + fmtEcts(best.passedEcts) + ' / ' + fmtEcts(best.ects) + ' ECTS aprovats</div>' +
-            '</div>' +
-            '<div class="star-quatri-card worst">' +
-              '<div class="star-quatri-label"><i class="ti ti-trending-down"></i>Pitjor</div>' +
-              '<div class="star-quatri-name">' + escapeHtml(worst.quatri) + '</div>' +
-              '<div class="star-quatri-grade">' + fmt(worst.avg) + '</div>' +
-              '<div class="star-quatri-meta">' + fmtEcts(worst.passedEcts) + ' / ' + fmtEcts(worst.ects) + ' ECTS aprovats</div>' +
-            '</div>' +
-          '</div>' +
-        '</div>';
-      }
-
-      const maxAvg = Math.max(...quatriData.map(q => q.avg || 0), 10);
-      html += '<div class="stat-block span-6">' +
-        '<div class="stat-block-header">' +
-          '<h3 class="stat-block-title"><i class="ti ti-bar-3"></i>Mitjana per quatrimestre</h3>' +
-        '</div>' +
-        '<div class="v-bar-chart">' +
-          quatriData.map(q => {
-            const pct = q.avg !== null ? (q.avg / maxAvg) * 100 : 0;
-            const cls = q.avg === null ? 'warn' : (q.avg >= 5 ? '' : 'fail');
-            return '<div class="v-bar-col">' +
-              '<div class="v-bar-track">' +
-                '<div class="v-bar-fill ' + cls + '" style="height:' + pct + '%;">' +
-                  (q.avg !== null ? '<div class="v-bar-value">' + fmt(q.avg) + '</div>' : '') +
-                '</div>' +
-              '</div>' +
-              '<div class="v-bar-label">' + escapeHtml(q.quatri) + '</div>' +
-            '</div>';
-          }).join('') +
-        '</div>' +
-      '</div>';
-
-      // 7. ECTS acumulats per quatri (linia)
-      const maxAcc = Math.max(...quatriData.map(q => q.accEcts), 1);
-      const w = 400, h = 140;
-      const pad = { l: 30, r: 20, t: 20, b: 25 };
-      const innerW = w - pad.l - pad.r;
-      const innerH = h - pad.t - pad.b;
-      let pathD = '', areaD = '', dotsHtml = '', labelsHtml = '', valuesHtml = '';
+    // -- Evolució + distribució
+    let chartHtml = '';
+    if (qd.length >= 2) {
+      const W = 700, Ht = 250, pl = 34, pr = 14, pt = 24, pb = 34, n = quatriData.length, iw = W - pl - pr, ih = Ht - pt - pb;
+      const maxE = Math.max(...quatriData.map(q => q.passedEcts), 1);
+      const xx = i => pl + iw * (i + 0.5) / n, yy = v => pt + ih * (1 - v / 10);
+      let s = '<svg class="st-chart" viewBox="0 0 ' + W + ' ' + Ht + '" role="img" aria-label="Evolució de la mitjana i dels ECTS aprovats per quatrimestre">';
+      [0, 5, 10].forEach(v => { s += '<line class="st-grid' + (v === 5 ? ' dash' : '') + '" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + yy(v) + '" y2="' + yy(v) + '"/><text class="st-ax" x="' + (pl - 8) + '" y="' + (yy(v) + 4) + '" text-anchor="end">' + v + '</text>'; });
       quatriData.forEach((q, i) => {
-        const x = pad.l + (quatriData.length === 1 ? innerW/2 : (i / (quatriData.length - 1)) * innerW);
-        const y = pad.t + innerH - (q.accEcts / maxAcc) * innerH;
-        pathD += (i === 0 ? 'M' : 'L') + x + ' ' + y + ' ';
-        if (i === 0) areaD = 'M' + x + ' ' + (pad.t + innerH) + ' L' + x + ' ' + y;
-        else areaD += ' L' + x + ' ' + y;
-        if (i === quatriData.length - 1) areaD += ' L' + x + ' ' + (pad.t + innerH) + ' Z';
-        dotsHtml += '<circle class="line-chart-dot" cx="' + x + '" cy="' + y + '" r="4"><title>' + q.quatri + ': ' + fmtEcts(q.accEcts) + ' ECTS</title></circle>';
-        labelsHtml += '<text class="line-chart-label" x="' + x + '" y="' + (h - 5) + '">' + q.quatri + '</text>';
-        valuesHtml += '<text class="line-chart-value" x="' + x + '" y="' + (y - 8) + '">' + fmtEcts(q.accEcts) + '</text>';
+        const bh = Math.max(ih * q.passedEcts / maxE * 0.8, q.passedEcts ? 4 : 0), bw = Math.min(iw / n * 0.46, 64);
+        s += '<rect class="st-bar" x="' + (xx(i) - bw / 2) + '" y="' + (pt + ih - bh) + '" width="' + bw + '" height="' + bh + '" rx="8"/>' +
+             '<text class="st-ax b" x="' + xx(i) + '" y="' + (Ht - 12) + '" text-anchor="middle">' + q.quatri + '</text>';
       });
+      const pts = quatriData.map((q, i) => q.avg === null ? null : [xx(i), yy(q.avg), q.avg]).filter(Boolean);
+      s += '<path class="st-line" d="M' + pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('L') + '"/>';
+      pts.forEach(p => { s += '<circle class="st-dot" cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="6"/><text class="st-val" x="' + p[0].toFixed(1) + '" y="' + (p[1] - 14).toFixed(1) + '" text-anchor="middle">' + fmt(p[2]) + '</text>'; });
+      chartHtml = s + '</svg>';
+    } else {
+      chartHtml = '<div class="st-none">' + (showByQuatri ? 'Necessites almenys dos quatrimestres amb notes finals per veure l\'evolució.' : 'Tria "Totes" a dalt per veure l\'evolució per quatrimestre.') + '</div>';
+    }
+    const maxH = Math.max(...histogram, 1);
+    const distRows = [['0–4', 0, '#F87171'], ['4–5', 1, '#F59E0B'], ['5–7', 2, '#34D399'], ['7–10', 3, '#10B981']].map(r =>
+      '<div class="st-dr"><span>' + r[0] + '</span><div class="st-dt"><i style="width:' + (histogram[r[1]] / maxH * 100) + '%;background:' + r[2] + '"></i></div><b>' + histogram[r[1]] + '</b></div>').join('');
+    html += '<div class="st-cols">' +
+      '<div class="st-card"><div class="st-hd"><h3>Evolució per quatrimestre</h3><span><i class="st-lg line"></i>Mitjana <i class="st-lg bar"></i>ECTS aprovats</span></div>' + chartHtml + '</div>' +
+      '<div class="st-card"><div class="st-hd"><h3>Distribució de notes</h3><span>' + finalGrades.length + ' finalitzades</span></div>' +
+        (finalGrades.length ? '<div class="st-dist">' + distRows + '</div>' : '<div class="st-none">Cap nota final encara</div>') + '</div>' +
+    '</div>';
 
-      html += '<div class="stat-block span-6">' +
-        '<div class="stat-block-header">' +
-          '<h3 class="stat-block-title"><i class="ti ti-trending-up"></i>ECTS acumulats</h3>' +
-          '<div class="stat-block-subtitle">' + fmtEcts(quatriData[quatriData.length-1].accEcts) + ' totals</div>' +
-        '</div>' +
-        '<div class="line-chart-wrap">' +
-          '<svg class="line-chart-svg" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
-            '<defs><linearGradient id="area-gradient" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#0EBB80" stop-opacity="0.4"/><stop offset="100%" stop-color="#0EBB80" stop-opacity="0"/></linearGradient></defs>' +
-            '<path class="line-chart-area" d="' + areaD + '" />' +
-            '<path class="line-chart-line" d="' + pathD + '" />' +
-            dotsHtml +
-            valuesHtml +
-            labelsHtml +
-          '</svg>' +
-        '</div>' +
-      '</div>';
-
-      // 8. Linia de mitjana per quatri (evolució)
-      const validAvgs = quatriData.filter(q => q.avg !== null);
-      if (validAvgs.length > 0) {
-        const lw = 460, lh = 200;
-        const lpad = { l: 32, r: 16, t: 24, b: 28 };
-        const linnerW = lw - lpad.l - lpad.r;
-        const linnerH = lh - lpad.t - lpad.b;
-        const maxY = 10, minY = 0;
-        const yFor = v => lpad.t + linnerH - ((v - minY) / (maxY - minY)) * linnerH;
-        // Linies grid horitzontals (0, 2.5, 5, 7.5, 10)
-        let gridHtml = '';
-        [0, 2.5, 5, 7.5, 10].forEach(v => {
-          const y = yFor(v);
-          gridHtml += '<line class="avg-line-grid" x1="' + lpad.l + '" x2="' + (lw - lpad.r) + '" y1="' + y + '" y2="' + y + '" />';
-          gridHtml += '<text class="avg-line-grid-label" x="' + (lpad.l - 6) + '" y="' + (y + 3) + '" text-anchor="end">' + v + '</text>';
-        });
-        // Linia base del 5
-        const y5 = yFor(5);
-        // Punts
-        let lPath = '', lArea = '', lDots = '', lValues = '', lLabels = '';
-        quatriData.forEach((q, i) => {
-          if (q.avg === null) return;
-          const x = lpad.l + (quatriData.length === 1 ? linnerW/2 : (i / (quatriData.length - 1)) * linnerW);
-          const y = yFor(q.avg);
-          lPath += (lPath === '' ? 'M' : 'L') + x + ' ' + y + ' ';
-          if (lArea === '') lArea = 'M' + x + ' ' + (lpad.t + linnerH) + ' L' + x + ' ' + y;
-          else lArea += ' L' + x + ' ' + y;
-          const dotCls = q.avg >= 5 ? '' : (q.avg >= 4 ? 'warn' : 'fail');
-          lDots += '<circle class="avg-line-dot ' + dotCls + '" cx="' + x + '" cy="' + y + '" r="5"><title>' + q.quatri + ': ' + fmt(q.avg) + '</title></circle>';
-          lValues += '<text class="avg-line-value" x="' + x + '" y="' + (y - 12) + '">' + fmt(q.avg) + '</text>';
-        });
-        // Tancar area al darrer punt
-        quatriData.forEach((q, i) => {
-          if (q.avg === null) return;
-          const x = lpad.l + (quatriData.length === 1 ? linnerW/2 : (i / (quatriData.length - 1)) * linnerW);
-          lLabels += '<text class="avg-line-label" x="' + x + '" y="' + (lh - 8) + '">' + q.quatri + '</text>';
-        });
-        // Cerrar el area
-        const lastValid = [...quatriData].reverse().findIndex(q => q.avg !== null);
-        if (lastValid !== -1) {
-          const lastIdx = quatriData.length - 1 - lastValid;
-          const lastX = lpad.l + (quatriData.length === 1 ? linnerW/2 : (lastIdx / (quatriData.length - 1)) * linnerW);
-          lArea += ' L' + lastX + ' ' + (lpad.t + linnerH) + ' Z';
-        }
-
-        // Trend (puja/baixa)
-        let trendBadge = '';
-        if (validAvgs.length >= 2) {
-          const last = validAvgs[validAvgs.length - 1].avg;
-          const prev = validAvgs[validAvgs.length - 2].avg;
-          const diff = last - prev;
-          if (Math.abs(diff) >= 0.05) {
-            const color = diff > 0 ? 'var(--accent)' : '#EF4444';
-            const icon = diff > 0 ? 'ti-trending-up' : 'ti-trending-down';
-            const sign = diff > 0 ? '+' : '';
-            trendBadge = '<div class="stat-block-subtitle" style="color:' + color + ';display:inline-flex;align-items:center;gap:4px;font-weight:700;"><i class="ti ' + icon + '"></i>' + sign + fmt(diff) + '</div>';
-          }
-        }
-
-        html += '<div class="stat-block span-6">' +
-          '<div class="stat-block-header">' +
-            '<h3 class="stat-block-title"><i class="ti ti-chart-line"></i>Evolució de la mitjana</h3>' +
-            trendBadge +
-          '</div>' +
-          '<div class="avg-line-wrap">' +
-            '<svg class="avg-line-svg" viewBox="0 0 ' + lw + ' ' + lh + '" preserveAspectRatio="none">' +
-              '<defs><linearGradient id="avg-area-gradient" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#0EBB80" stop-opacity="0.5"/><stop offset="100%" stop-color="#0EBB80" stop-opacity="0"/></linearGradient></defs>' +
-              gridHtml +
-              '<line class="avg-line-baseline" x1="' + lpad.l + '" x2="' + (lw - lpad.r) + '" y1="' + y5 + '" y2="' + y5 + '" />' +
-              '<path class="avg-line-fill" d="' + lArea + '" />' +
-              '<path class="avg-line-path" d="' + lPath + '" />' +
-              lDots + lValues + lLabels +
-            '</svg>' +
-          '</div>' +
-        '</div>';
-      }
-
-      // 9. Heatmap per any acadèmic / quatri
-      // Agrupar quatris per any acadèmic: "23-24" -> [Q1, Q2]
-      const heatByYear = {};
-      Object.keys(quatriData.reduce((acc, q) => (acc[q.quatri]=q, acc), {})).forEach(qLabel => {
-        const m = qLabel.match(/^(\d{2}-\d{2}) (Q[12])$/);
-        if (!m) return;
-        const year = m[1], qpart = m[2];
-        if (!heatByYear[year]) heatByYear[year] = { Q1: null, Q2: null };
-        const qd = quatriData.find(x => x.quatri === qLabel);
-        heatByYear[year][qpart] = qd ? qd.avg : null;
-      });
-      const years = Object.keys(heatByYear).sort();
-      if (years.length > 0) {
-        // Color per nota: gradient roig (0) -> groc (5) -> verd (10)
-        function colorForGrade(g) {
-          if (g === null) return null;
-          // Clamp 0-10
-          const v = Math.max(0, Math.min(10, g));
-          let r, gn, b;
-          if (v < 5) {
-            // roig -> groc
-            const t = v / 5;
-            r = 239; gn = Math.round(68 + (179 - 68) * t); b = Math.round(68 + (24 - 68) * t);
-          } else {
-            // groc -> verd
-            const t = (v - 5) / 5;
-            r = Math.round(245 + (14 - 245) * t); gn = Math.round(158 + (187 - 158) * t); b = Math.round(11 + (128 - 11) * t);
-          }
-          return 'rgb(' + r + ',' + gn + ',' + b + ')';
-        }
-
-        let heatRows = '';
-        years.forEach(year => {
-          let cellsHtml = '';
-          ['Q1', 'Q2'].forEach(q => {
-            const v = heatByYear[year][q];
-            if (v === null) {
-              cellsHtml += '<div class="heatmap-cell heatmap-cell-empty" title="' + year + ' ' + q + ': sense dades"><div class="heatmap-cell-q">' + q + '</div><div class="heatmap-cell-val">—</div></div>';
-            } else {
-              const bg = colorForGrade(v);
-              cellsHtml += '<div class="heatmap-cell" style="background:' + bg + ';color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.2);" title="' + year + ' ' + q + ': ' + fmt(v) + '"><div class="heatmap-cell-q">' + q + '</div><div class="heatmap-cell-val">' + fmt(v) + '</div></div>';
-            }
-          });
-          heatRows += '<div class="heatmap-row">' +
-            '<div class="heatmap-year-label">' + year + '</div>' +
-            '<div class="heatmap-cells">' + cellsHtml + '</div>' +
-          '</div>';
-        });
-
-        // Llegenda
-        const legendSteps = [0, 2.5, 5, 7.5, 10];
-        let legendBar = '<div class="heatmap-legend-bar">';
-        for (let i = 0; i < 20; i++) {
-          legendBar += '<div style="background:' + colorForGrade((i / 19) * 10) + ';"></div>';
-        }
-        legendBar += '</div>';
-
-        html += '<div class="stat-block span-12">' +
-          '<div class="stat-block-header">' +
-            '<h3 class="stat-block-title"><i class="ti ti-grid-dots"></i>Mapa de calor per quatrimestre</h3>' +
-            '<div class="stat-block-subtitle">' + years.length + ' anys acadèmics</div>' +
-          '</div>' +
-          '<div class="heatmap">' + heatRows + '</div>' +
-          '<div class="heatmap-legend">' +
-            '<span>0</span>' + legendBar + '<span>10</span>' +
-          '</div>' +
-        '</div>';
-      }
+    // -- Quatrimestres
+    if (quatriData.length) {
+      html += '<h3 class="st-h">Quatrimestres</h3><div class="st-qs">' + quatriData.map(q => {
+        const tag = (best && quatriData.length > 1 && q === best) ? '<span class="st-tag s"><i class="ti ti-star"></i>Estrella</span>' : (worst && q === worst ? '<span class="st-tag w">Pitjor</span>' : '');
+        const bars = q.subs.map(x => '<i title="' + escapeHtml(x.sigla) + ' ' + fmt(x.g) + '" style="--c:' + x.color + ';height:' + Math.max(x.g, 0.4) * 10 + '%"></i>').join('');
+        return '<div class="st-card st-q">' + tag + '<span class="st-qn">' + q.quatri + '</span>' +
+          '<span class="st-qa ' + gtone(q.avg) + '">' + (q.avg !== null ? fmt(q.avg) : '—') + '</span>' +
+          '<div class="st-mini">' + bars + '</div>' +
+          '<span class="st-sub">' + fmtEcts(q.passedEcts) + ' / ' + fmtEcts(q.ects) + ' ECTS aprovats</span></div>';
+      }).join('') + '</div>';
     }
 
+    // -- Millors / per millorar
+    if (top3.length) {
+      const topIds = new Set(top3.map(x => x.sigla + x.quatri));
+      const weak = [...allGraded].sort((x, y) => x.grade - y.grade).filter(x => !topIds.has(x.sigla + x.quatri)).slice(0, 3);
+      html += '<div class="st-tops"><div class="st-card"><div class="st-hd"><h3>Millors notes</h3></div><div class="st-trow">' +
+        top3.map((it, i) => '<div class="st-poster" style="--c:' + it.color + '" title="' + escapeHtml(it.name) + '"><div class="st-pr"><span class="st-ps">' + escapeHtml(it.sigla) + '</span><em>#' + (i + 1) + '</em></div><span class="st-pg">' + fmt(it.grade) + '</span></div>').join('') +
+        '</div></div>' +
+        '<div class="st-card"><div class="st-hd"><h3>Per millorar</h3></div>' + (weak.length ? '<div class="st-trow">' +
+        weak.map(it => '<div class="st-flat" style="--c:' + it.color + '" title="' + escapeHtml(it.name) + '"><span class="st-ps">' + escapeHtml(it.sigla) + '</span><span class="st-pg ' + gtone(it.grade) + '">' + fmt(it.grade) + '</span></div>').join('') +
+        '</div>' : '<div class="st-none">Cap més nota per comparar</div>') + '</div></div>';
+    }
+    html += '</div>';
     root.innerHTML = html;
   }
 
