@@ -21,11 +21,19 @@
     '23-24 Q2', '23-24 Q1',
     '22-23 Q2', '22-23 Q1'
   ];
+  // Graus del Campus Nord (FIB, ETSETB i ETSECCPB) i alguns de la FME
   const CAREERS = [
     { id: 'gei', name: 'Grau en Enginyeria Informàtica', short: 'GEI', school: 'FIB - UPC', totalEcts: 240 },
-    { id: 'gcd', name: 'Grau en Ciència i Enginyeria de Dades', short: 'GCD', school: 'FIB - UPC', totalEcts: 240 },
+    { id: 'gced', name: 'Grau en Ciència i Enginyeria de Dades', short: 'GCED', school: 'FIB - UPC', totalEcts: 240 },
     { id: 'gia', name: 'Grau en Intel·ligència Artificial', short: 'GIA', school: 'FIB - UPC', totalEcts: 240 },
-    { id: 'gem', name: 'Grau en Enginyeria Matemàtica en la Ciència de Dades', short: 'GEMCD', school: 'FIB - UPC', totalEcts: 240 },
+    { id: 'gbi', name: 'Grau en Bioinformàtica', short: 'GBI', school: 'FIB - UPC', totalEcts: 240 },
+    { id: 'gem', name: 'Grau en Enginyeria Matemàtica en la Ciència de Dades', short: 'GEMCD', school: 'FME - UPC', totalEcts: 240 },
+    { id: 'gretst', name: 'Grau en Enginyeria de Tecnologies i Serveis de Telecomunicació', short: 'GRETST', school: 'ETSETB - UPC', totalEcts: 240 },
+    { id: 'greelec', name: 'Grau en Enginyeria Electrònica de Telecomunicació', short: 'GREELEC', school: 'ETSETB - UPC', totalEcts: 240 },
+    { id: 'gef', name: 'Grau en Enginyeria Física', short: 'GEF', school: 'ETSETB - UPC', totalEcts: 240 },
+    { id: 'gec', name: 'Grau en Enginyeria Civil', short: 'GEC', school: 'ETSECCPB - UPC', totalEcts: 240 },
+    { id: 'gea', name: 'Grau en Enginyeria Ambiental', short: 'GEA', school: 'ETSECCPB - UPC', totalEcts: 240 },
+    { id: 'gctm', name: 'Grau en Ciències i Tecnologies del Mar', short: 'GCTM', school: 'ETSECCPB - UPC', totalEcts: 240 },
     { id: 'other', name: 'Altres', short: 'Altres', school: '', totalEcts: 240 }
   ];
   let activePage = 'notes';
@@ -74,6 +82,7 @@
     } catch (e) { state = { subjects: [], career: null }; }
     if (!state.subjects) state.subjects = [];
     if (state.career === undefined) state.career = null;
+    if (state.career === 'gcd') state.career = 'gced'; // el grau es diu GCED
     if (state.userName === undefined) state.userName = '';
     if (state.username === undefined) state.username = '';
     if (!state.events) state.events = [];
@@ -139,9 +148,12 @@
 
   window.openCareerModal = function() {
     const root = document.getElementById('modal-root');
+    let lastSchool = null;
     const optionsHtml = CAREERS.map(c => {
       const cls = c.id === state.career ? 'career-option selected' : 'career-option';
-      return '<div class="' + cls + '" onclick="selectCareer(\'' + c.id + '\')"><strong>' + escapeHtml(c.short) + '</strong> — ' + escapeHtml(c.name) + (c.school ? ' <span style="color:var(--text-tertiary);font-size:12px;">(' + escapeHtml(c.school) + ')</span>' : '') + '</div>';
+      const heading = c.school !== lastSchool && c.school ? '<div class="career-school">' + escapeHtml(c.school.replace(' - UPC', '')) + '</div>' : '';
+      lastSchool = c.school;
+      return heading + '<div class="' + cls + '" onclick="selectCareer(\'' + c.id + '\')"><strong>' + escapeHtml(c.short) + '</strong> — ' + escapeHtml(c.name) + '</div>';
     }).join('');
     root.innerHTML =
       '<div class="modal-bg" onclick="if(event.target===this)closeCareerModal()">' +
@@ -731,7 +743,19 @@
       if (calcGrade(s) === null) notStarted++; else inProgress++;
     });
     const passedPct = total > 0 ? Math.round(passed / total * 100) : 0;
-    const ectsPct = totalEcts > 0 ? passedEcts / totalEcts : 0;
+    // ECTS aprovats de tota la carrera (independent del filtre de quatrimestre), sense comptar dues vegades la mateixa sigla
+    const seenAll = new Set();
+    let careerPassed = 0;
+    state.subjects.forEach(s => {
+      const sig = (s.sigla || s.name || '').trim().toUpperCase();
+      if (sig && seenAll.has(sig)) return;
+      if (sig) seenAll.add(sig);
+      const contributor = sig ? getEctsContributor(sig) : (getStatus(s).type === 'pass' || getStatus(s).type === 'compensable' ? s : null);
+      if (contributor) careerPassed += parseFloat(s.ects) || 0;
+    });
+    const careerDef = state.career ? CAREERS.find(c => c.id === state.career) : null;
+    const careerTotal = (careerDef && careerDef.totalEcts) || 240;
+    const ectsPct = Math.min(1, careerPassed / careerTotal);
     const CIRC = 113.1;
     const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
 
@@ -744,10 +768,12 @@
     cards += '<div class="st">' +
         '<div class="l"><i class="ti ti-school"></i>ECTS aprovats</div>' +
         '<div class="st-ring"><div>' +
-          '<div class="v">' + fmtEcts(passedEcts) + '<small>/ ' + fmtEcts(totalEcts) + '</small></div>' +
-          '<div class="s">' + Math.round(ectsPct * 100) + '% del total</div></div>' +
-          '<svg width="46" height="46" viewBox="0 0 46 46" aria-hidden="true"><circle cx="23" cy="23" r="18" stroke="rgba(255,255,255,0.28)" stroke-width="5" fill="none"/>' +
-          '<circle cx="23" cy="23" r="18" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="' + (ectsPct * CIRC).toFixed(1) + ' ' + CIRC + '" transform="rotate(-90 23 23)"/></svg>' +
+          '<div class="v">' + fmtEcts(careerPassed) + '<small>/ ' + careerTotal + '</small></div>' +
+          '<div class="s">de la carrera</div></div>' +
+          '<div class="ring" role="img" aria-label="' + Math.round(ectsPct * 100) + '% de la carrera">' +
+            '<svg width="52" height="52" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="21" stroke="rgba(255,255,255,0.25)" stroke-width="5" fill="none"/>' +
+            '<circle cx="26" cy="26" r="21" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="' + (ectsPct * 131.9).toFixed(1) + ' 131.9" transform="rotate(-90 26 26)"/></svg>' +
+            '<span>' + Math.round(ectsPct * 100) + '%</span></div>' +
         '</div>' +
       '</div>';
     const progressBits = [];
@@ -1377,11 +1403,20 @@
   }
   function schedHM(min) { const h = Math.floor(min / 60), m = min % 60; return m ? h + ':' + String(m).padStart(2, '0') : String(h); }
   function schedSlot(c) { return SCH_DIES[c[3] - 1] + ' ' + schedHM(c[4]) + '–' + schedHM(c[4] + c[5]) + 'h'; }
+  // Quatrimestre de l'horari en el format de les targetes: 2026Q1 -> "26-27 Q1"
+  function schedQuatri() {
+    const H = schedData(), y = parseInt(H.quad.slice(2, 4), 10);
+    return y + '-' + (y + 1) + ' ' + H.quad.slice(4);
+  }
   function schedFindSubject(code) {
-    const H = schedData();
-    const q = H.quad.slice(2, 4) + '-' + String(parseInt(H.quad.slice(2, 4), 10) + 1) + ' ' + H.quad.slice(4);
+    const q = schedQuatri();
     const all = state.subjects.filter(s => String(s.sigla || '').toUpperCase() === code);
     return all.find(s => s.quatri === q) || all[0] || null;
+  }
+  // Codis de les teves assignatures d'aquest quatrimestre que tenen horari
+  function schedMine() {
+    const q = schedQuatri(), codes = schedCodes();
+    return codes.filter(c => state.subjects.some(s => s.quatri === q && String(s.sigla || '').toUpperCase() === c));
   }
   function schedColor(code) {
     const s = schedFindSubject(code);
@@ -1456,7 +1491,7 @@
       '<button type="button" class="btn btn-primary" onclick="openSchedAdd()"><i class="ti ti-plus"></i>Afegeix assignatures</button></div>';
 
     if (!codes.length) {
-      const mine = state.subjects.map(s => String(s.sigla || '').toUpperCase()).filter((c, i, a) => schedCodes().includes(c) && a.indexOf(c) === i);
+      const mine = schedMine();
       root.innerHTML = head +
         '<div class="sch-empty"><div class="sch-empty-ic"><i class="ti ti-calendar-week"></i></div>' +
         '<h4>Encara no tens horari</h4>' +
@@ -1550,12 +1585,9 @@
     save(); renderSchedule(); renderSchedAddList();
   };
   window.schedAddMine = function() {
-    const picks = getSched().picks, codes = schedCodes();
+    const picks = getSched().picks;
     let n = 0;
-    state.subjects.forEach(s => {
-      const c = String(s.sigla || '').toUpperCase();
-      if (codes.includes(c) && !picks[c]) { picks[c] = {}; n++; }
-    });
+    schedMine().forEach(c => { if (!picks[c]) { picks[c] = {}; n++; } });
     save(); renderSchedule();
     if (n) showToast(n + (n === 1 ? ' assignatura afegida' : ' assignatures afegides') + '. Tria ara el grup de cadascuna.');
   };
@@ -1577,9 +1609,9 @@
     if (!box) return;
     const picks = getSched().picks, codes = schedCodes();
     const pill = c => '<button type="button" class="sch-add-pill' + (picks[c] ? ' on' : '') + '" aria-pressed="' + !!picks[c] + '" onclick="schedToggle(\'' + c + '\')">' + (picks[c] ? '<i class="ti ti-check"></i>' : '') + escapeHtml(c) + '</button>';
-    const mine = codes.filter(c => schedFindSubject(c));
+    const mine = schedMine();
     let html = '';
-    if (!schedQuery && mine.length) html += '<div class="sch-add-h">Les teves assignatures</div><div class="sch-add-pills">' + mine.map(pill).join('') + '</div>';
+    if (!schedQuery && mine.length) html += '<div class="sch-add-h">Les teves assignatures de ' + escapeHtml(schedQuatri()) + '</div><div class="sch-add-pills">' + mine.map(pill).join('') + '</div>';
     const rest = codes.filter(c => (!schedQuery ? !mine.includes(c) : c.includes(schedQuery)));
     html += '<div class="sch-add-h">' + (schedQuery ? 'Resultats' : 'Totes les assignatures del GEI') + '</div>' +
       (rest.length ? '<div class="sch-add-pills">' + rest.map(pill).join('') + '</div>' : '<div class="sch-add-none">Cap assignatura amb aquesta sigla.</div>');
@@ -2606,7 +2638,7 @@
             state.subjects = cloud.subjects || [];
             state.events = cloud.events || [];
             state.schedules = cloud.schedules || state.schedules || {};
-            state.career = cloud.career !== undefined ? cloud.career : null;
+            state.career = cloud.career === 'gcd' ? 'gced' : (cloud.career !== undefined ? cloud.career : null);
             state.userName = cloud.userName || '';
             state.username = cloud.username || '';
             _origSave();
@@ -2619,7 +2651,7 @@
           state.subjects = cloud.subjects || [];
           state.events = cloud.events || [];
           state.schedules = cloud.schedules || state.schedules || {};
-          state.career = cloud.career !== undefined ? cloud.career : null;
+          state.career = cloud.career === 'gcd' ? 'gced' : (cloud.career !== undefined ? cloud.career : null);
           state.userName = cloud.userName || '';
           state.username = cloud.username || '';
           _origSave();
