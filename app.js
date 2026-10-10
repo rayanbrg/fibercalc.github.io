@@ -1391,7 +1391,7 @@
         '<div class="modal legal-modal" role="dialog" aria-label="Avís legal i privacitat">' +
           '<h3>Avís legal i privacitat</h3>' +
           '<div class="legal-body">' +
-            '<h4>Qui hi ha darrere</h4><p>FiberCalc és un projecte independent fet per un estudiant. No és un servei oficial ni està afiliat, avalat o patrocinat per la Universitat Politècnica de Catalunya (UPC) ni per la Facultat d\'Informàtica de Barcelona (FIB). Els noms i sigles es fan servir només per identificar les assignatures.</p>' +
+            '<h4>Qui hi ha darrere</h4><p>FiberCalc és un projecte independent fet per un estudiant de la FIB. No és un servei oficial ni està afiliat, avalat o patrocinat per la Universitat Politècnica de Catalunya (UPC) ni per la Facultat d\'Informàtica de Barcelona (FIB). Els noms i sigles es fan servir només per identificar les assignatures.</p>' +
             '<h4>Horaris</h4><p>Els horaris provenen de la informació pública de la FIB i poden tenir errors o canviar. Consulta sempre la web oficial de la FIB abans de fiar-te\'n.</p>' +
             '<h4>Notes i càlculs</h4><p>Els càlculs són orientatius i es fan amb el que tu hi escrius. No substitueixen les qualificacions oficials ni el que diguin les guies docents de cada assignatura.</p>' +
             '<h4>Les teves dades</h4><p>Les notes, esdeveniments, horari i perfil es guarden al teu navegador. Si inicies sessió amb Google, també es copien al núvol (Google Firebase) per sincronitzar-les entre dispositius.</p>' +
