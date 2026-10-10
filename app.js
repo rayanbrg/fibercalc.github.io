@@ -61,7 +61,6 @@
   let state = { subjects: [] };
   let editingId = null;
   let draft = null;
-  let expandedId = null;
   let prevStatus = {}; // 'pass' | 'fail' | 'compensable' | 'none'
   let firstRender = true;
   let activeFilter = 'ALL';
@@ -360,7 +359,6 @@
     root.innerHTML = reorderMode
       ? '<div class="reorder-banner"><span><i class="ti ti-info-circle"></i> Mode reordenar actiu. Arrossega les targetes per moure-les.</span><button class="btn-ghost" onclick="toggleReorder()" style="color:inherit;"><i class="ti ti-check"></i>Fet</button></div>'
       : '';
-    if (reorderMode) expandedId = null;
     render();
   };
 
@@ -368,6 +366,112 @@
     if (activeFilter === 'ALL') return state.subjects;
     return state.subjects.filter(s => s.quatri === activeFilter);
   }
+
+  // ---- Targeta d'assignatura: peces de la interfície ----
+  function hasGrade(p) { return p.grade !== null && p.grade !== undefined && p.grade !== ''; }
+  function fmtW(n) { return String(Math.round(n * 100) / 100); }
+  function partTone(p) { return hasGrade(p) ? (parseFloat(p.grade) >= 5 ? 'g' : 'b') : ''; }
+  // Mida de la sigla dins del quadrat: com més curta, més gran
+  function monoFontSize(sigla) {
+    const n = String(sigla).length;
+    return n <= 2 ? 22 : n === 3 ? 19 : n === 4 ? 16 : n === 5 ? 13.5 : 11.5;
+  }
+  function cardMetrics(s) {
+    const parts = getActiveParts(s);
+    let earned = 0, evaluated = 0, pending = 0, pendingCount = 0;
+    parts.forEach(p => {
+      const w = parseFloat(p.weight) || 0;
+      if (hasGrade(p)) { earned += (parseFloat(p.grade) * w) / 100; evaluated += w; }
+      else { pending += w; pendingCount++; }
+    });
+    return { parts, earned, evaluated, pending, pendingCount };
+  }
+  function cardHeroHtml(s, m) {
+    const st = getStatus(s);
+    let left;
+    if (st.final) {
+      const tone = st.type === 'pass' ? 'ok' : st.type === 'compensable' ? 'mid' : 'bad';
+      left = '<div class="k">Nota final</div><div class="v ' + tone + '">' + fmt(st.grade) + '</div><div class="sub">Avaluació completada</div>';
+    } else if (st.secured) {
+      left = '<div class="k">Necessites</div><div class="v ok flat"><i class="ti ti-check"></i><small>assegurat</small></div><div class="sub">Ja tens prou per aprovar</div>';
+    } else if (st.impossible) {
+      left = '<div class="k">Necessites</div><div class="v bad">' + fmt(st.needed) + '<small>de mitjana</small></div><div class="sub">No s\'hi arriba amb el que queda</div>';
+    } else if (st.needed !== null && st.needed !== undefined) {
+      const tone = st.needed <= 6 ? 'ok' : st.needed <= 8 ? 'mid' : 'bad';
+      const where = m.pendingCount === 1 ? 'a la part que queda' : 'a les ' + m.pendingCount + ' parts que queden';
+      left = '<div class="k">Necessites</div><div class="v ' + tone + '">' + fmt(st.needed) + '<small>de mitjana</small></div><div class="sub">' + where + '</div>';
+    } else {
+      left = '<div class="k">Nota</div><div class="v">—</div><div class="sub">Sense apartats</div>';
+    }
+    const right = st.final
+      ? '<div class="k">Pes avaluat</div><div class="v">' + fmtW(m.evaluated) + '%</div>'
+      : '<div class="k">Acumulada</div><div class="v">' + fmt(m.earned) + '<small>/ 10</small></div><div class="sub">' + fmtW(m.evaluated) + '% avaluat</div>';
+    return '<div class="hero-cell">' + left + '</div><div class="hero-cell right">' + right + '</div>';
+  }
+  function cardBarHtml(m) {
+    if (m.parts.length === 0) return '';
+    return '<div class="card-bar">' + m.parts.map(p =>
+      '<div class="seg ' + partTone(p) + '" style="flex:' + (parseFloat(p.weight) || 0) + '" title="' + escapeHtml(p.name || '') + '"></div>'
+    ).join('') + '</div>' +
+    '<div class="card-bar-cap"><span>' + fmtW(m.evaluated) + '% avaluat</span><span>' + fmtW(m.pending) + '% pendent</span></div>';
+  }
+  function cardChipHtml(s) {
+    const st = getStatus(s);
+    if (st.final) {
+      if (st.type === 'pass') return '<span class="chip pass"><i class="ti ti-check"></i>Aprovada</span>';
+      if (st.type === 'compensable') return '<span class="chip compensable"><i class="ti ti-scale"></i>Compensable</span>';
+      return '<span class="chip fail"><i class="ti ti-x"></i>Suspesa</span>';
+    }
+    if (st.secured) return '<span class="chip pass"><i class="ti ti-check"></i>Ja tens prou per aprovar</span>';
+    if (st.impossible) return '<span class="chip fail"><i class="ti ti-alert-triangle"></i>Inaccessible amb el que queda</span>';
+    if (st.needed !== null && st.needed !== undefined) return '<span class="chip warn"><i class="ti ti-target"></i>Encara aprovable</span>';
+    return '<span class="chip warn"><i class="ti ti-pencil"></i>Sense notes</span>';
+  }
+  function tileHint(s, p) {
+    const need = calcNeededPerPart(s);
+    return (!hasGrade(p) && need !== null && need > 0 && need <= 10) ? fmt(need) : '–';
+  }
+  function cardTilesHtml(s, m) {
+    return m.parts.map((p, i) => {
+      const name = p.name || ('Part ' + (i + 1));
+      const w = fmtW(parseFloat(p.weight) || 0);
+      return '<label class="tile ' + partTone(p) + '" data-part="' + p.id + '">' +
+        '<span class="t-top"><b title="' + escapeHtml(name) + '">' + escapeHtml(name) + '</b><span>' + w + '%</span></span>' +
+        '<input type="text" inputmode="decimal" autocomplete="off" placeholder="' + tileHint(s, p) + '" value="' + (hasGrade(p) ? escapeHtml(String(p.grade)) : '') + '"' +
+          ' aria-label="Nota de ' + escapeHtml(name) + ' (' + w + '%)" data-subject="' + s.id + '" data-part="' + p.id + '"' +
+          ' oninput="onGradeInput(event)" onblur="onGradeBlur(event)" />' +
+      '</label>';
+    }).join('');
+  }
+  // Menu ⋯ de la targeta (Editar / Eliminar)
+  function closeCardMenu() {
+    document.querySelectorAll('.card-menu').forEach(el => el.remove());
+    document.querySelectorAll('.kebab[aria-expanded="true"]').forEach(b => b.setAttribute('aria-expanded', 'false'));
+  }
+  window.toggleCardMenu = function(id, ev) {
+    ev.stopPropagation();
+    const btn = ev.currentTarget;
+    const wasOpen = btn.getAttribute('aria-expanded') === 'true';
+    closeCardMenu();
+    if (wasOpen) return;
+    btn.setAttribute('aria-expanded', 'true');
+    const menu = document.createElement('div');
+    menu.className = 'card-menu';
+    menu.setAttribute('role', 'menu');
+    menu.innerHTML =
+      '<button type="button" role="menuitem" onclick="closeCardMenu();openModal(\'' + id + '\')"><i class="ti ti-edit"></i>Editar</button>' +
+      '<button type="button" role="menuitem" class="danger" onclick="closeCardMenu();deleteSubject(\'' + id + '\')"><i class="ti ti-trash"></i>Eliminar</button>';
+    btn.parentElement.appendChild(menu);
+    const first = menu.querySelector('button');
+    if (first) first.focus();
+  };
+  window.closeCardMenu = closeCardMenu;
+  document.addEventListener('click', (e) => { if (!e.target.closest('.card-menu-wrap')) closeCardMenu(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const open = document.querySelector('.kebab[aria-expanded="true"]');
+    if (open) { closeCardMenu(); open.focus(); }
+  });
 
   function render() {
     const grid = document.getElementById('grid');
@@ -394,157 +498,55 @@
       const justFailed = !firstRender && statusType === 'fail' && prevStatus[s.id] !== 'fail';
       // Mitjana nomes amb assignatures finalitzades
       if (g !== null && status.final) { validGrades.push(g); if (g >= 5) passing++; }
-      const gradeText = g === null ? '—' : fmt(g);
-      const neededPart = calcNeededPerPart(s);
 
-      let statusClass = 'status-pill', statusContent = '';
-      if (status.final) {
-        if (status.type === 'pass') {
-          statusClass += ' status-pass';
-          statusContent = '<i class="ti ti-check"></i> Aprovat amb <strong>' + fmt(status.grade) + '</strong>';
-        } else if (status.type === 'compensable') {
-          statusClass += ' status-compensable';
-          statusContent = '<i class="ti ti-scale"></i> Compensable amb <strong>' + fmt(status.grade) + '</strong>';
-        } else {
-          statusClass += ' status-fail';
-          statusContent = '<i class="ti ti-x"></i> Suspès amb <strong>' + fmt(status.grade) + '</strong>';
-        }
-      } else if (status.secured) {
-        statusClass += ' status-pass';
-        statusContent = '<i class="ti ti-check"></i> Ja tens prou per aprovar';
-      } else if (status.impossible) {
-        statusClass += ' status-fail';
-        statusContent = '<i class="ti ti-alert-triangle"></i> Inaccessible amb el que queda';
-      } else if (status.needed !== null) {
-        statusClass += ' status-warn';
-        statusContent = '<i class="ti ti-target"></i> Encara aprovable';
-      } else {
-        statusClass += ' status-warn';
-        statusContent = '<i class="ti ti-pencil"></i> Sense notes';
-      }
-
-      // Collapsed view: parts as pills (max 4 visible; if more, show 3 + "+N more")
-      const activeParts = getActiveParts(s);
-      const MAX_VISIBLE = 4;
-      const totalParts = activeParts.length;
-      let visibleParts, hiddenCount;
-      if (totalParts <= MAX_VISIBLE) {
-        visibleParts = activeParts;
-        hiddenCount = 0;
-      } else {
-        visibleParts = activeParts.slice(0, MAX_VISIBLE - 1);
-        hiddenCount = totalParts - (MAX_VISIBLE - 1);
-      }
-      let collapsedPartsHtml = visibleParts.map(p => {
-        const hasGrade = p.grade !== null && p.grade !== undefined && p.grade !== '';
-        const cls = hasGrade ? 'collapsed-part' : 'collapsed-part empty';
-        const val = hasGrade ? fmt(parseFloat(p.grade)) : '–';
-        return '<div class="' + cls + '">' +
-          '<div class="collapsed-part-name" title="' + escapeHtml(p.name) + '">' + escapeHtml(p.name) + '</div>' +
-          '<div class="collapsed-part-grade">' + val + '</div>' +
-        '</div>';
-      }).join('');
-      if (hiddenCount > 0) {
-        collapsedPartsHtml += '<div class="collapsed-more">+' + hiddenCount + '<strong>més</strong></div>';
-      }
-
-      // Expanded view: editable parts
-      const partsHtml = activeParts.map(p => {
-        const hasGrade = p.grade !== null && p.grade !== undefined && p.grade !== '';
-        const showHint = !hasGrade && neededPart !== null && neededPart > 0 && neededPart <= 10;
-        const hintValue = showHint ? fmt(neededPart) : '';
-        return '<div class="part">' +
-          '<span class="part-name" title="' + escapeHtml(p.name) + '">' + escapeHtml(p.name) + '</span>' +
-          '<div class="input-wrapper">' +
-            '<input type="text" inputmode="decimal" placeholder=" " value="' + (hasGrade ? p.grade : '') + '" data-subject="' + s.id + '" data-part="' + p.id + '" oninput="onGradeInput(event)" onblur="onGradeBlur(event)" onclick="event.stopPropagation()" />' +
-            (showHint ? '<span class="ghost-hint">' + hintValue + '</span>' : '') +
-          '</div>' +
-          '<span class="part-weight">' + fmt(parseFloat(p.weight) || 0) + '%</span>' +
-        '</div>';
-      }).join('');
-
-      let earned = 0, pending = 0;
-      activeParts.forEach(p => {
-        const w = parseFloat(p.weight) || 0;
-        if (p.grade !== null && p.grade !== undefined && p.grade !== '') {
-          earned += (parseFloat(p.grade) * w) / 100;
-        } else {
-          pending += w;
-        }
-      });
-      const detailsHtml = '<div class="card-details">' +
-        '<div class="detail-row"><span>Nota acumulada</span><strong>' + fmt(earned) + '</strong></div>' +
-        '<div class="detail-row"><span>Pes ja avaluat</span><strong>' + fmt(100 - pending) + '%</strong></div>' +
-        '<div class="detail-row"><span>Pes pendent</span><strong>' + fmt(pending) + '%</strong></div>' +
-        (neededPart !== null && neededPart > 0 && neededPart <= 10
-          ? '<div class="detail-row"><span>Necessites per aprovar</span><strong>' + fmt(neededPart) + '</strong></div>'
-          : '') +
-      '</div>';
-
-      const expandedClass = expandedId === s.id ? ' expanded' : '';
       let animClass = '';
       if (justPassed) animClass = ' passed-anim';
       else if (justFailed) animClass = ' failed-anim';
       const reorderClass = reorderMode ? ' reorder-mode' : '';
-      const dragAttrs = reorderMode ? 'draggable="true" ondragstart="onDragStart(event,\'' + s.id + '\')" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event,\'' + s.id + '\')" ondragend="onDragEnd(event)"' : '';
-      const clickHandler = reorderMode ? '' : 'onclick="toggleExpand(\'' + s.id + '\')"';
+      const dragAttrs = reorderMode ? ' draggable="true" ondragstart="onDragStart(event,\'' + s.id + '\')" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event,\'' + s.id + '\')" ondragend="onDragEnd(event)"' : '';
 
-      // Info de matricula
+      // Info de matricula (nomes es mostra a partir de la 2a)
       const matricula = getMatriculaInfo(s);
       const matSuffix = ['', '1a', '2a', '3a', '4a', '5a', '6a'][matricula.num] || (matricula.num + 'a');
-      const matCls = matricula.num === 1 ? 'card-matricula first' : 'card-matricula';
-      const matriculaHtml = matricula.total > 1 || matricula.num > 1
-        ? '<span class="' + matCls + '"><i class="ti ti-bookmark"></i>' + matSuffix + ' matrícula</span>'
+      const matriculaHtml = matricula.num > 1
+        ? '<i class="dot"></i><span class="card-matricula"><i class="ti ti-bookmark"></i>' + matSuffix + ' matrícula</span>'
         : '';
 
-      // Selector d'avaluacio (nomes si te mes d'una)
+      // Selector d'avaluacio (nomes si te mes d'una): botons si en son poques, desplegable si en son moltes
       let evalSelectorHtml = '';
       if (s.evaluations && s.evaluations.length > 1) {
-        const opts = s.evaluations.map(ev =>
-          '<option value="' + ev.id + '"' + (ev.id === s.activeEval ? ' selected' : '') + '>' + escapeHtml(ev.name) + '</option>'
-        ).join('');
-        evalSelectorHtml = '<div class="eval-selector" onclick="event.stopPropagation()">' +
-          '<label><i class="ti ti-list-check"></i> Avaluació</label>' +
-          '<select onchange="switchSubjectEval(\'' + s.id + '\', this.value)">' + opts + '</select>' +
-        '</div>';
-      }
-
-      // Badge d'estat final
-      let badgeHtml = '';
-      if (status.final) {
-        if (status.type === 'pass') {
-          badgeHtml = '<span class="card-badge badge-pass"><i class="ti ti-check"></i>Aprovada</span>';
-        } else if (status.type === 'compensable') {
-          badgeHtml = '<span class="card-badge badge-compensable"><i class="ti ti-scale"></i>Compensable</span>';
-        } else if (status.type === 'fail') {
-          badgeHtml = '<span class="card-badge badge-fail"><i class="ti ti-x"></i>Suspesa</span>';
+        if (s.evaluations.length <= 3) {
+          evalSelectorHtml = '<div class="seg-ctl" role="group" aria-label="Tipus d\'avaluació">' + s.evaluations.map(ev =>
+            '<button type="button" class="' + (ev.id === s.activeEval ? 'on' : '') + '" aria-pressed="' + (ev.id === s.activeEval) + '" onclick="switchSubjectEval(\'' + s.id + '\', \'' + ev.id + '\')">' + escapeHtml(ev.name) + '</button>'
+          ).join('') + '</div>';
+        } else {
+          evalSelectorHtml = '<select class="eval-select" aria-label="Tipus d\'avaluació" onchange="switchSubjectEval(\'' + s.id + '\', this.value)">' + s.evaluations.map(ev =>
+            '<option value="' + ev.id + '"' + (ev.id === s.activeEval ? ' selected' : '') + '>' + escapeHtml(ev.name) + '</option>'
+          ).join('') + '</select>';
         }
       }
 
-      const isExpanded = expandedId === s.id;
       const sigla = s.sigla || s.name || '';
-      const displayName = isExpanded && s.fullName ? sigla + ' — ' + s.fullName : sigla;
-      return '<div class="card' + expandedClass + animClass + reorderClass + '" data-card-id="' + s.id + '" ' + dragAttrs + ' ' + clickHandler + '>' +
-        '<div class="card-banner" style="background:' + color.bg + ';color:#ffffff;">' +
-          '<div class="card-header-text">' +
-            '<h3 class="card-name" style="color:#ffffff;">' + escapeHtml(displayName) + '</h3>' +
-            '<span class="card-quatri">' + escapeHtml(s.quatri || '') + '</span>' +
-            (matriculaHtml) +
+      const title = s.fullName || sigla;
+      const m = cardMetrics(s);
+      const menuHtml = reorderMode
+        ? '<span class="card-grip" aria-hidden="true"><i class="ti ti-grip-vertical"></i></span>'
+        : '<div class="card-menu-wrap"><button type="button" class="kebab" aria-label="Més opcions" aria-haspopup="menu" aria-expanded="false" onclick="toggleCardMenu(\'' + s.id + '\', event)"><i class="ti ti-dots"></i></button></div>';
+
+      return '<div class="card' + animClass + reorderClass + '" data-card-id="' + s.id + '"' + dragAttrs + '>' +
+        '<div class="card-head">' +
+          '<div class="mono" style="background:' + color.bg + ';font-size:' + monoFontSize(sigla) + 'px;">' + escapeHtml(sigla) + '</div>' +
+          '<div class="card-title">' +
+            '<h3 class="card-name">' + escapeHtml(title) + '</h3>' +
+            '<div class="card-meta"><span>' + escapeHtml(s.quatri || '') + '</span><i class="dot"></i><span>' + escapeHtml(String(s.ects || 6)) + ' ECTS</span>' + matriculaHtml + '</div>' +
           '</div>' +
-          '<span class="card-grade" style="color:#ffffff;">' + gradeText + '</span>' +
+          menuHtml +
         '</div>' +
-        badgeHtml +
+        '<div class="card-hero">' + cardHeroHtml(s, m) + '</div>' +
+        '<div class="card-barwrap">' + cardBarHtml(m) + '</div>' +
         evalSelectorHtml +
-        '<div class="collapsed-parts">' + collapsedPartsHtml + '</div>' +
-        '<div class="card-body" onclick="event.stopPropagation()">' +
-          '<div class="parts">' + partsHtml + '</div>' +
-          '<div class="' + statusClass + '">' + statusContent + '</div>' +
-          detailsHtml +
-          '<div class="card-actions">' +
-            '<button class="icon-btn" onclick="event.stopPropagation();openModal(\'' + s.id + '\')" aria-label="Editar"><i class="ti ti-edit"></i></button>' +
-            '<button class="icon-btn" onclick="event.stopPropagation();deleteSubject(\'' + s.id + '\')" aria-label="Eliminar"><i class="ti ti-trash"></i></button>' +
-          '</div>' +
-        '</div>' +
+        '<div class="tiles">' + cardTilesHtml(s, m) + '</div>' +
+        '<div class="card-foot">' + cardChipHtml(s) + '</div>' +
       '</div>';
     }).join('');
 
@@ -737,12 +739,6 @@
     render();
   };
 
-  window.toggleExpand = function(subjectId) {
-    if (reorderMode) return;
-    expandedId = expandedId === subjectId ? null : subjectId;
-    render();
-  };
-
   window.onGradeInput = function(ev) {
     const inp = ev.target;
     const sId = inp.dataset.subject;
@@ -756,6 +752,7 @@
     if (value === '' || value === null) {
       p.grade = null;
       save();
+      updateCardLive(sId);
       return;
     }
     if (!/^-?\d*[.,]?\d*$/.test(value)) {
@@ -781,8 +778,10 @@
       const v = parseNum(ev.target.value);
       if (v !== null) p.grade = Math.max(0, Math.min(10, v));
       save();
+      if (v !== null) ev.target.value = String(p.grade); // "7," -> "7"
     }
-    render();
+    // No es torna a dibuixar res aquí: tot s'actualitza en directe a updateCardLive.
+    // (Redibuixar en sortir d'una casella feia perdre el focus en anar amb Tab o clic a la següent.)
   };
 
   function updateCardLive(subjectId) {
@@ -790,9 +789,32 @@
     if (!s) return;
     const card = document.querySelector('[data-card-id="' + subjectId + '"]');
     if (!card) return;
-    const g = calcGrade(s);
-    const gradeEl = card.querySelector('.card-grade');
-    if (gradeEl) gradeEl.textContent = g === null ? '—' : fmt(g);
+    // Animació en canviar a aprovada / suspesa
+    const stType = getStatusType(s);
+    if (prevStatus[s.id] !== stType) {
+      prevStatus[s.id] = stType;
+      const animCls = stType === 'pass' ? 'passed-anim' : stType === 'fail' ? 'failed-anim' : '';
+      card.classList.remove('passed-anim', 'failed-anim');
+      if (animCls && !REDUCED_MOTION) {
+        void card.offsetWidth;
+        card.classList.add(animCls);
+        setTimeout(() => card.classList.remove(animCls), 1400);
+      }
+    }
+    // Refresca resum, barra, estat i pistes sense tornar a dibuixar les caselles (així no es perd el cursor)
+    const m = cardMetrics(s);
+    card.querySelector('.card-hero').innerHTML = cardHeroHtml(s, m);
+    card.querySelector('.card-barwrap').innerHTML = cardBarHtml(m);
+    card.querySelector('.card-foot').innerHTML = cardChipHtml(s);
+    m.parts.forEach(p => {
+      const tile = card.querySelector('.tile[data-part="' + p.id + '"]');
+      if (!tile) return;
+      tile.classList.remove('g', 'b');
+      const tone = partTone(p);
+      if (tone) tile.classList.add(tone);
+      const inp = tile.querySelector('input');
+      if (inp) inp.placeholder = tileHint(s, p);
+    });
 
     let validGrades = [], passing = 0;
     state.subjects.forEach(sub => {
@@ -810,7 +832,10 @@
       document.getElementById('overall').innerHTML =
         '<div class="stats"><span class="stat">Mitjana <strong>' + fmt(avg) + '</strong></span>' +
         '<span class="stat">Aprovades <strong>' + passing + '/' + scope + '</strong></span></div>';
+    } else {
+      document.getElementById('overall').textContent = state.subjects.length + ' assignatures · sense notes encara';
     }
+    renderDashboard();
   }
 
   window.deleteSubject = function(subjectId) {
@@ -819,7 +844,6 @@
     if (idx < 0) return;
     const removed = state.subjects[idx];
     state.subjects = state.subjects.filter(s => s.id !== subjectId);
-    if (expandedId === subjectId) expandedId = null;
     save(); renderFilters(); render();
     showToast('Assignatura eliminada', { icon: 'ti-trash', undo: () => {
       state.subjects.splice(Math.min(idx, state.subjects.length), 0, removed);
