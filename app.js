@@ -2,6 +2,7 @@
   const STORAGE_KEY = 'fibercalc-data';
   const THEME_KEY = 'fibercalc-theme';
   const FILTER_KEY = 'fibercalc-filter';
+  const COLLAPSED_KEY = 'fibercalc-collapsed';
   const PALETTE = [
     { name: 'purple', bg: '#A78BFA' },
     { name: 'teal',   bg: '#14B8A6' },
@@ -400,27 +401,35 @@
     });
     return { parts, earned, evaluated, pending, pendingCount };
   }
+  // Nota que es mostra en gran: la final si ja està tot avaluat; si no, l'acumulada
+  function cardGradeHtml(s, m) {
+    const st = getStatus(s);
+    const tone = st.final ? (st.type === 'pass' ? 'ok' : st.type === 'compensable' ? 'mid' : 'bad') : '';
+    return '<span class="card-grade ' + tone + '">' + fmt(st.final ? st.grade : m.earned) + '</span>';
+  }
   function cardHeroHtml(s, m) {
     const st = getStatus(s);
-    let left;
     if (st.final) {
       const tone = st.type === 'pass' ? 'ok' : st.type === 'compensable' ? 'mid' : 'bad';
-      left = '<div class="k">Nota final</div><div class="v ' + tone + '">' + fmt(st.grade) + '</div><div class="sub">Avaluació completada</div>';
-    } else if (st.secured) {
-      left = '<div class="k">Necessites</div><div class="v ok flat"><i class="ti ti-check"></i><small>assegurat</small></div><div class="sub">Ja tens prou per aprovar</div>';
+      return '<div class="hero-cell main ' + tone + '"><div class="k">Nota final</div><div class="v ' + tone + '">' + fmt(st.grade) + '</div><div class="sub">Avaluació completada</div></div>';
+    }
+    if (m.parts.length === 0) {
+      return '<div class="hero-cell main"><div class="k">Nota</div><div class="v">—</div><div class="sub">Sense apartats</div></div>';
+    }
+    const main = '<div class="hero-cell main"><div class="k">Nota acumulada</div><div class="v">' + fmt(m.earned) + '<small>/ 10</small></div><div class="sub">' + fmtW(m.evaluated) + '% avaluat</div></div>';
+    let side;
+    if (st.secured) {
+      side = '<div class="k">Necessites</div><div class="v ok flat"><i class="ti ti-check"></i></div><div class="sub">Ja tens prou per aprovar</div>';
     } else if (st.impossible) {
-      left = '<div class="k">Necessites</div><div class="v bad">' + fmt(st.needed) + '<small>de mitjana</small></div><div class="sub">No s\'hi arriba amb el que queda</div>';
+      side = '<div class="k">Necessites</div><div class="v bad">' + fmt(st.needed) + '</div><div class="sub">No s\'hi arriba amb el que queda</div>';
     } else if (st.needed !== null && st.needed !== undefined) {
       const tone = st.needed <= 6 ? 'ok' : st.needed <= 8 ? 'mid' : 'bad';
-      const where = m.pendingCount === 1 ? 'a la part que queda' : 'a les ' + m.pendingCount + ' parts que queden';
-      left = '<div class="k">Necessites</div><div class="v ' + tone + '">' + fmt(st.needed) + '<small>de mitjana</small></div><div class="sub">' + where + '</div>';
+      const where = m.pendingCount === 1 ? 'de mitjana a la part que queda' : 'de mitjana a les ' + m.pendingCount + ' parts que queden';
+      side = '<div class="k">Necessites</div><div class="v ' + tone + '">' + fmt(st.needed) + '</div><div class="sub">' + where + '</div>';
     } else {
-      left = '<div class="k">Nota</div><div class="v">—</div><div class="sub">Sense apartats</div>';
+      side = '<div class="k">Necessites</div><div class="v">—</div>';
     }
-    const right = st.final
-      ? '<div class="k">Pes avaluat</div><div class="v">' + fmtW(m.evaluated) + '%</div>'
-      : '<div class="k">Acumulada</div><div class="v">' + fmt(m.earned) + '<small>/ 10</small></div><div class="sub">' + fmtW(m.evaluated) + '% avaluat</div>';
-    return '<div class="hero-cell">' + left + '</div><div class="hero-cell right">' + right + '</div>';
+    return main + '<div class="hero-cell side">' + side + '</div>';
   }
   function cardBarHtml(m) {
     if (m.parts.length === 0) return '';
@@ -441,6 +450,23 @@
     if (st.needed !== null && st.needed !== undefined) return '<span class="chip warn"><i class="ti ti-target"></i>Encara aprovable</span>';
     return '<span class="chip warn"><i class="ti ti-pencil"></i>Sense notes</span>';
   }
+  // Targetes tancades (es recorden entre visites)
+  let collapsed = {};
+  try { collapsed = JSON.parse(localStorage.getItem(COLLAPSED_KEY) || '{}') || {}; } catch (e) { collapsed = {}; }
+  function saveCollapsed() { try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify(collapsed)); } catch (e) {} }
+  window.toggleCard = function(id, ev) {
+    if (reorderMode) return;
+    if (ev && ev.target.closest('.card-menu-wrap, .card-menu')) return;
+    const card = document.querySelector('[data-card-id="' + id + '"]');
+    if (!card) return;
+    const closed = !card.classList.contains('closed');
+    card.classList.toggle('closed', closed);
+    if (closed) collapsed[id] = 1; else delete collapsed[id];
+    saveCollapsed();
+    const btn = card.querySelector('.chev');
+    if (btn) { btn.setAttribute('aria-expanded', String(!closed)); btn.setAttribute('aria-label', closed ? 'Obrir targeta' : 'Tancar targeta'); }
+    closeCardMenu();
+  };
   function tileHint(s, p) {
     const need = calcNeededPerPart(s);
     return (!hasGrade(p) && need !== null && need > 0 && need <= 10) ? fmt(need) : '–';
@@ -554,14 +580,18 @@
         ? '<span class="card-grip" aria-hidden="true"><i class="ti ti-grip-vertical"></i></span>'
         : '<div class="card-menu-wrap"><button type="button" class="kebab" aria-label="Més opcions" aria-haspopup="menu" aria-expanded="false" onclick="toggleCardMenu(\'' + s.id + '\', event)"><i class="ti ti-dots"></i></button></div>';
 
-      return '<div class="card' + animClass + reorderClass + '" data-card-id="' + s.id + '"' + dragAttrs + '>' +
-        '<div class="card-head">' +
+      const isClosed = !!collapsed[s.id];
+      const chevHtml = reorderMode ? '' : '<button type="button" class="chev" aria-expanded="' + (!isClosed) + '" aria-label="' + (isClosed ? 'Obrir targeta' : 'Tancar targeta') + '"><i class="ti ti-chevron-up"></i></button>';
+
+      return '<div class="card' + animClass + reorderClass + (isClosed ? ' closed' : '') + '" data-card-id="' + s.id + '"' + dragAttrs + '>' +
+        '<div class="card-head" onclick="toggleCard(\'' + s.id + '\', event)">' +
           '<div class="mono" style="background:' + color.bg + ';font-size:' + monoFontSize(sigla) + 'px;">' + escapeHtml(sigla) + '</div>' +
           '<div class="card-title">' +
             '<h3 class="card-name">' + escapeHtml(title) + '</h3>' +
             '<div class="card-meta"><span>' + escapeHtml(s.quatri || '') + '</span><i class="dot"></i><span>' + escapeHtml(String(s.ects || 6)) + ' ECTS</span>' + matriculaHtml + '</div>' +
           '</div>' +
-          menuHtml +
+          '<span class="card-grade-wrap" data-grade>' + cardGradeHtml(s, m) + '</span>' +
+          menuHtml + chevHtml +
         '</div>' +
         '<div class="card-hero">' + cardHeroHtml(s, m) + '</div>' +
         '<div class="card-barwrap">' + cardBarHtml(m) + '</div>' +
@@ -821,6 +851,7 @@
     // Refresca resum, barra, estat i pistes sense tornar a dibuixar les caselles (així no es perd el cursor)
     const m = cardMetrics(s);
     card.querySelector('.card-hero').innerHTML = cardHeroHtml(s, m);
+    const gw = card.querySelector('[data-grade]'); if (gw) gw.innerHTML = cardGradeHtml(s, m);
     card.querySelector('.card-barwrap').innerHTML = cardBarHtml(m);
     card.querySelector('.card-foot').innerHTML = cardChipHtml(s);
     m.parts.forEach(p => {
