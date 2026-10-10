@@ -113,6 +113,7 @@
       <button class="page-tab active" id="tab-notes" onclick="switchPage('notes')"><i class="ti ti-notebook"></i><span class="tab-long">Les meves notes</span><span class="tab-short">Notes</span></button>
       <button class="page-tab" id="tab-stats" onclick="switchPage('stats')"><i class="ti ti-chart-pie"></i>Estadístiques</button>
       <button class="page-tab" id="tab-calendar" onclick="switchPage('calendar')"><i class="ti ti-calendar"></i>Calendari</button>
+      <button class="page-tab" id="tab-schedule" onclick="switchPage('schedule')"><i class="ti ti-calendar-week"></i>Horari</button>
       <button class="page-tab" id="tab-friends" onclick="switchPage('friends')"><i class="ti ti-users"></i>Amics</button>
     </nav>
     <div class="filter-bar" id="filter-bar"></div>
@@ -127,12 +128,16 @@
   <div id="calendar-view" style="display:none;">
     <div id="calendar-content"></div>
   </div>
+  <div id="schedule-view" style="display:none;">
+    <div id="schedule-content"></div>
+  </div>
   <div id="friends-view" style="display:none;">
     <div id="friends-content"></div>
   </div>
   <div id="modal-root"></div>
 </div>
 <script src="plantilles-gei.js?v=1"></script>
-<script src="app.js?v=10"></script>
+<script src="horaris-gei.js?v=1"></script>
+<script src="app.js?v=11"></script>
 </body>
 </html>

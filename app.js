@@ -77,6 +77,7 @@
     if (state.userName === undefined) state.userName = '';
     if (state.username === undefined) state.username = '';
     if (!state.events) state.events = [];
+    if (!state.schedules) state.schedules = {};
     state.subjects.forEach(s => {
       if (!s.quatri) s.quatri = '25-26 Q2';
       if (s.ects === undefined || s.ects === null) s.ects = 6;
@@ -1332,24 +1333,261 @@
     document.getElementById('tab-notes').classList.toggle('active', page === 'notes');
     document.getElementById('tab-stats').classList.toggle('active', page === 'stats');
     document.getElementById('tab-calendar').classList.toggle('active', page === 'calendar');
+    document.getElementById('tab-schedule').classList.toggle('active', page === 'schedule');
     document.getElementById('tab-friends').classList.toggle('active', page === 'friends');
     document.getElementById('notes-view').style.display = page === 'notes' ? '' : 'none';
     document.getElementById('stats-view').style.display = page === 'stats' ? '' : 'none';
     document.getElementById('calendar-view').style.display = page === 'calendar' ? '' : 'none';
+    document.getElementById('schedule-view').style.display = page === 'schedule' ? '' : 'none';
     document.getElementById('friends-view').style.display = page === 'friends' ? '' : 'none';
     let title;
     if (page === 'notes') title = getGreeting();
     else if (page === 'stats') title = 'Estadístiques';
     else if (page === 'calendar') title = 'Calendari';
+    else if (page === 'schedule') title = 'Horari';
     else title = 'Amics';
     document.getElementById('page-title').textContent = title;
     document.getElementById('hero').classList.toggle('compact', page !== 'notes');
     if (page === 'stats') renderStats();
     if (page === 'calendar') renderCalendar();
+    if (page === 'schedule') renderSchedule();
     if (page === 'friends') renderFriends();
     moveTabIndicator(true);
     playEntrance(page);
   };
+
+  // ============ HORARI ============
+  // Dades públiques de la FIB (horaris-gei.js, generat amb tools/horaris-gei.py).
+  // Cada classe: [assignatura, grup, tipus (T/P/L), dia (1 = dilluns), inici (min), durada (min), aula, idioma]
+  const SCH_DIES = ['Dl', 'Dm', 'Dc', 'Dj', 'Dv'];
+  const SCH_TIPUS = { T: 'Teoria', P: 'Problemes', L: 'Laboratori' };
+  const SCH_ROW = 56; // alçada d'una hora a la graella (px)
+  let schedQuery = '';
+
+  function schedData() { return window.FIBERCALC_HORARIS || null; }
+  function getSched() {
+    const H = schedData();
+    if (!state.schedules) state.schedules = {};
+    if (!state.schedules[H.quad]) state.schedules[H.quad] = { picks: {} };
+    return state.schedules[H.quad];
+  }
+  function schedCodes() {
+    const H = schedData();
+    return Array.from(new Set(H.classes.map(c => c[0]))).sort((a, b) => a.localeCompare(b));
+  }
+  function schedHM(min) { const h = Math.floor(min / 60), m = min % 60; return m ? h + ':' + String(m).padStart(2, '0') : String(h); }
+  function schedSlot(c) { return SCH_DIES[c[3] - 1] + ' ' + schedHM(c[4]) + '–' + schedHM(c[4] + c[5]) + 'h'; }
+  function schedFindSubject(code) {
+    const H = schedData();
+    const q = H.quad.slice(2, 4) + '-' + String(parseInt(H.quad.slice(2, 4), 10) + 1) + ' ' + H.quad.slice(4);
+    const all = state.subjects.filter(s => String(s.sigla || '').toUpperCase() === code);
+    return all.find(s => s.quatri === q) || all[0] || null;
+  }
+  function schedColor(code) {
+    const s = schedFindSubject(code);
+    if (s) return getColor(s.color).bg;
+    let h = 0; for (let i = 0; i < code.length; i++) h = (h * 31 + code.charCodeAt(i)) >>> 0;
+    return PALETTE[h % PALETTE.length].bg;
+  }
+  // Grups d'un tipus: Map grup -> franges
+  function schedGroups(code, tipus) {
+    const H = schedData();
+    const m = new Map();
+    H.classes.forEach(c => { if (c[0] === code && c[2] === tipus) { if (!m.has(c[1])) m.set(c[1], []); m.get(c[1]).push(c); } });
+    return new Map(Array.from(m.entries()).sort((a, b) => parseInt(a[0], 10) - parseInt(b[0], 10)));
+  }
+  function schedBlocks() {
+    const H = schedData(), picks = getSched().picks, out = [];
+    Object.keys(picks).forEach(code => {
+      Object.keys(picks[code]).forEach(tipus => {
+        const grup = picks[code][tipus];
+        H.classes.forEach(c => {
+          if (c[0] === code && c[2] === tipus && c[1] === grup) {
+            out.push({ code, tipus, grup, dia: c[3], start: c[4], dur: c[5], aula: c[6], idioma: c[7], color: schedColor(code) });
+          }
+        });
+      });
+    });
+    return out;
+  }
+  // Reparteix en carrils els blocs que se solapen dins d'un mateix dia
+  function schedLayout(blocks) {
+    const conflicts = [];
+    for (let d = 1; d <= 5; d++) {
+      const day = blocks.filter(b => b.dia === d).sort((a, b) => a.start - b.start || b.dur - a.dur);
+      let cluster = [], end = -1;
+      const flush = () => {
+        if (!cluster.length) return;
+        const lanes = [];
+        cluster.forEach(b => {
+          let l = lanes.findIndex(e => e <= b.start);
+          if (l < 0) { l = lanes.length; lanes.push(0); }
+          lanes[l] = b.start + b.dur; b.lane = l;
+        });
+        cluster.forEach(b => { b.lanes = lanes.length; b.conflict = cluster.length > 1; });
+        if (cluster.length > 1) {
+          for (let i = 0; i < cluster.length; i++) for (let j = i + 1; j < cluster.length; j++) {
+            const a = cluster[i], c = cluster[j];
+            if (a.start < c.start + c.dur && c.start < a.start + a.dur) conflicts.push([a, c]);
+          }
+        }
+        cluster = [];
+      };
+      day.forEach(b => {
+        if (cluster.length && b.start >= end) { flush(); end = -1; }
+        cluster.push(b); end = Math.max(end, b.start + b.dur);
+      });
+      flush();
+    }
+    return conflicts;
+  }
+
+  function renderSchedule() {
+    const root = document.getElementById('schedule-content');
+    const H = schedData();
+    if (!root) return;
+    if (!H) { root.innerHTML = '<div class="grid-empty">No s\'han pogut carregar els horaris.</div>'; return; }
+    const picks = getSched().picks;
+    const codes = Object.keys(picks);
+    const upd = H.updated ? H.updated.split('-').reverse().join('/') : '';
+    const head =
+      '<div class="sch-top"><div><h3 class="sch-title">' + escapeHtml(H.label) + '</h3>' +
+      '<div class="sch-sub">Horaris oficials de la FIB · GEI · actualitzat el ' + escapeHtml(upd) + '</div></div>' +
+      '<button type="button" class="btn btn-primary" onclick="openSchedAdd()"><i class="ti ti-plus"></i>Afegeix assignatures</button></div>';
+
+    if (!codes.length) {
+      const mine = state.subjects.map(s => String(s.sigla || '').toUpperCase()).filter((c, i, a) => schedCodes().includes(c) && a.indexOf(c) === i);
+      root.innerHTML = head +
+        '<div class="sch-empty"><div class="sch-empty-ic"><i class="ti ti-calendar-week"></i></div>' +
+        '<h4>Encara no tens horari</h4>' +
+        '<p>Tria les teves assignatures i el grup de cadascuna, i et dibuixem la setmana.</p>' +
+        '<div class="sch-empty-actions">' +
+          (mine.length ? '<button type="button" class="btn btn-primary" onclick="schedAddMine()"><i class="ti ti-sparkles"></i>Afegeix les meves (' + mine.map(escapeHtml).join(', ') + ')</button>' : '') +
+          '<button type="button" class="btn" onclick="openSchedAdd()">Triar assignatures</button>' +
+        '</div></div>';
+      return;
+    }
+
+    // ---- Graella setmanal
+    const blocks = schedBlocks();
+    const conflicts = schedLayout(blocks);
+    let t0 = 24 * 60, t1 = 0;
+    blocks.forEach(b => { t0 = Math.min(t0, Math.floor(b.start / 60) * 60); t1 = Math.max(t1, Math.ceil((b.start + b.dur) / 60) * 60); });
+    if (!blocks.length) { t0 = 8 * 60; t1 = 14 * 60; }
+    if (t1 - t0 < 6 * 60) t1 = t0 + 6 * 60;
+    const hours = (t1 - t0) / 60;
+    const todayDow = new Date().getDay(); // 1..5 = dl..dv
+    const now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
+    let times = '', cols = '', heads = '<div class="sch-corner"></div>';
+    for (let i = 0; i <= hours; i++) times += '<span style="top:' + (i * SCH_ROW) + 'px">' + (t0 / 60 + i) + ':00</span>';
+    for (let d = 1; d <= 5; d++) {
+      heads += '<div class="sch-dh' + (d === todayDow ? ' today' : '') + '">' + SCH_DIES[d - 1] + '</div>';
+      const bs = blocks.filter(b => b.dia === d).map(b => {
+        const top = (b.start - t0) / 60 * SCH_ROW, h = b.dur / 60 * SCH_ROW;
+        const tip = b.code + ' · ' + SCH_TIPUS[b.tipus] + ' grup ' + b.grup + '\n' + schedSlot([0, 0, 0, b.dia, b.start, b.dur]) + '\nAula ' + b.aula + (b.idioma ? ' · ' + b.idioma : '');
+        return '<div class="sch-b t-' + b.tipus + (b.conflict ? ' conflict' : '') + '" title="' + escapeHtml(tip) + '" style="--bc:' + b.color + ';top:' + (top + 1) + 'px;height:' + (h - 2) + 'px;left:calc(' + (b.lane / b.lanes * 100) + '% + 2px);width:calc(' + (100 / b.lanes) + '% - 4px)">' +
+          '<b>' + escapeHtml(b.code) + '</b><span class="sch-bt">' + b.tipus + ' ' + escapeHtml(b.grup) + '</span><em>' + escapeHtml(b.aula) + '</em></div>';
+      }).join('');
+      const nowLine = (d === todayDow && nowMin >= t0 && nowMin <= t1) ? '<div class="sch-now" style="top:' + ((nowMin - t0) / 60 * SCH_ROW) + 'px"></div>' : '';
+      cols += '<div class="sch-col' + (d === todayDow ? ' today' : '') + '">' + bs + nowLine + '</div>';
+    }
+    const grid = '<div class="sch-card"><div class="sch-grid" style="--rows:' + hours + ';--row:' + SCH_ROW + 'px">' +
+      heads + '<div class="sch-times">' + times + '</div>' + cols + '</div></div>';
+
+    // ---- Solapaments
+    let warn = '';
+    if (conflicts.length) {
+      const items = conflicts.slice(0, 4).map(([a, c]) =>
+        '<li><b>' + escapeHtml(a.code) + ' ' + a.tipus + '</b> i <b>' + escapeHtml(c.code) + ' ' + c.tipus + '</b> · ' + schedSlot([0, 0, 0, a.dia, Math.max(a.start, c.start), Math.min(a.start + a.dur, c.start + c.dur) - Math.max(a.start, c.start)]) + '</li>').join('');
+      warn = '<div class="sch-warn"><i class="ti ti-alert-triangle"></i><div><strong>Tens ' + conflicts.length + (conflicts.length === 1 ? ' solapament' : ' solapaments') + '</strong><ul>' + items + '</ul></div></div>';
+    }
+
+    // ---- Selecció de grups per assignatura
+    const subj = codes.map(code => {
+      const s = schedFindSubject(code);
+      const color = schedColor(code);
+      const pk = picks[code];
+      const rows = ['T', 'P', 'L'].map(tp => {
+        const g = schedGroups(code, tp);
+        if (!g.size) return '';
+        const fam = pk.T ? String(pk.T)[0] : null;
+        const pills = Array.from(g.entries()).map(([grup, rs]) => {
+          const slots = rs.map(schedSlot);
+          const txt = slots.slice(0, 2).join(' · ') + (slots.length > 2 ? ' +' + (slots.length - 2) : '');
+          const lang = rs[0][7] ? '<i class="lang">' + escapeHtml(rs[0][7]) + '</i>' : '';
+          const on = pk[tp] === grup, rec = tp !== 'T' && fam && String(grup)[0] === fam;
+          return '<button type="button" class="sch-pill' + (on ? ' on' : '') + (rec && !on ? ' fam' : '') + '" aria-pressed="' + on + '" onclick="schedPick(\'' + code + '\',\'' + tp + '\',\'' + grup + '\')"><b>' + escapeHtml(grup) + '</b><small>' + escapeHtml(txt) + '</small>' + lang + '</button>';
+        }).join('');
+        return '<div class="sch-row"><div class="sch-tl">' + SCH_TIPUS[tp] + '</div><div class="sch-pills">' + pills + '</div></div>';
+      }).join('');
+      return '<div class="sch-subj" style="--c:' + color + '"><div class="sch-sh"><span class="sch-sig">' + escapeHtml(code) + '</span>' +
+        '<span class="sch-nm">' + escapeHtml(s && s.fullName ? s.fullName : '') + '</span>' +
+        '<button type="button" class="sch-x" aria-label="Treure ' + escapeHtml(code) + '" title="Treure de l\'horari" onclick="schedToggle(\'' + code + '\')"><i class="ti ti-x"></i></button></div>' + rows + '</div>';
+    }).join('');
+
+    // ---- Avisos de la FIB sobre els grups triats
+    const avisos = [];
+    H.notes.forEach(([code, text]) => {
+      if (!picks[code]) return;
+      const m = text.match(/\b(\d{2})([TPL])\b/);
+      if (m && picks[code][m[2]] !== m[1]) return;
+      avisos.push('<li><b>' + escapeHtml(code) + '</b> ' + escapeHtml(text.replace(/^\S+\s/, '')) + '</li>');
+    });
+    const avisosHtml = avisos.length ? '<div class="sch-avisos"><h4><i class="ti ti-info-circle"></i>Avisos de la FIB</h4><ul>' + avisos.join('') + '</ul></div>' : '';
+
+    root.innerHTML = head + warn + grid + '<h4 class="sch-h">Les meves assignatures</h4><div class="sch-subjs">' + subj + '</div>' + avisosHtml;
+  }
+
+  window.schedPick = function(code, tipus, grup) {
+    const pk = getSched().picks[code];
+    if (!pk) return;
+    if (pk[tipus] === grup) delete pk[tipus]; else pk[tipus] = grup;
+    save(); renderSchedule();
+  };
+  window.schedToggle = function(code) {
+    const picks = getSched().picks;
+    if (picks[code]) delete picks[code]; else picks[code] = {};
+    save(); renderSchedule(); renderSchedAddList();
+  };
+  window.schedAddMine = function() {
+    const picks = getSched().picks, codes = schedCodes();
+    let n = 0;
+    state.subjects.forEach(s => {
+      const c = String(s.sigla || '').toUpperCase();
+      if (codes.includes(c) && !picks[c]) { picks[c] = {}; n++; }
+    });
+    save(); renderSchedule();
+    if (n) showToast(n + (n === 1 ? ' assignatura afegida' : ' assignatures afegides') + '. Tria ara el grup de cadascuna.');
+  };
+  window.openSchedAdd = function() {
+    schedQuery = '';
+    document.getElementById('modal-root').innerHTML =
+      '<div class="modal-bg" id="sched-add"><div class="modal sch-modal" role="dialog" aria-label="Afegeix assignatures">' +
+        '<h3>Afegeix assignatures</h3>' +
+        '<input type="text" id="sched-q" placeholder="Cerca per sigla (IDI, XC, PRO1…)" autocomplete="off" oninput="schedFilterAdd(this.value)" />' +
+        '<div id="sched-add-list" class="sch-add-list"></div>' +
+        '<div class="modal-actions"><button class="btn btn-primary" onclick="closeModal()">Fet</button></div>' +
+      '</div></div>';
+    renderSchedAddList();
+    const q = document.getElementById('sched-q'); if (q) q.focus();
+  };
+  window.schedFilterAdd = function(v) { schedQuery = String(v || '').trim().toUpperCase(); renderSchedAddList(); };
+  function renderSchedAddList() {
+    const box = document.getElementById('sched-add-list');
+    if (!box) return;
+    const picks = getSched().picks, codes = schedCodes();
+    const pill = c => '<button type="button" class="sch-add-pill' + (picks[c] ? ' on' : '') + '" aria-pressed="' + !!picks[c] + '" onclick="schedToggle(\'' + c + '\')">' + (picks[c] ? '<i class="ti ti-check"></i>' : '') + escapeHtml(c) + '</button>';
+    const mine = codes.filter(c => schedFindSubject(c));
+    let html = '';
+    if (!schedQuery && mine.length) html += '<div class="sch-add-h">Les teves assignatures</div><div class="sch-add-pills">' + mine.map(pill).join('') + '</div>';
+    const rest = codes.filter(c => (!schedQuery ? !mine.includes(c) : c.includes(schedQuery)));
+    html += '<div class="sch-add-h">' + (schedQuery ? 'Resultats' : 'Totes les assignatures del GEI') + '</div>' +
+      (rest.length ? '<div class="sch-add-pills">' + rest.map(pill).join('') + '</div>' : '<div class="sch-add-none">Cap assignatura amb aquesta sigla.</div>');
+    box.innerHTML = html;
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.getElementById('sched-add')) closeModal();
+  });
 
   // ============ CALENDAR ============
   function renderCalendar() {
@@ -2319,6 +2557,7 @@
         await window.fbSetDoc(ref, {
           subjects: state.subjects || [],
           events: state.events || [],
+          schedules: state.schedules || {},
           career: state.career || null,
           userName: state.userName || '',
           username: state.username || '',
@@ -2366,6 +2605,7 @@
             // Carregar del nᅵvol
             state.subjects = cloud.subjects || [];
             state.events = cloud.events || [];
+            state.schedules = cloud.schedules || state.schedules || {};
             state.career = cloud.career !== undefined ? cloud.career : null;
             state.userName = cloud.userName || '';
             state.username = cloud.username || '';
@@ -2378,6 +2618,7 @@
           // No hi ha locals: carregar del nᅵvol
           state.subjects = cloud.subjects || [];
           state.events = cloud.events || [];
+          state.schedules = cloud.schedules || state.schedules || {};
           state.career = cloud.career !== undefined ? cloud.career : null;
           state.userName = cloud.userName || '';
           state.username = cloud.username || '';
