@@ -963,6 +963,7 @@
   window.openModal = function(subjectId) {
     editingId = subjectId || null;
     modalTemplateCode = null;
+    modalTplOpen = false; modalTplQuery = ''; modalTplGroup = 'all';
     if (editingId) {
       draft = JSON.parse(JSON.stringify(state.subjects.find(x => x.id === editingId)));
     } else {
@@ -990,55 +991,118 @@
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
     return m ? (m[3] + '/' + m[2] + '/' + m[1]) : '';
   }
+  // Selector de plantilles: panell amb cercador i filtres per grup (obligatòries, mencions, optatives)
+  const TPL_FILTERS = [
+    ['all', 'Totes'], ['Obligatòria', 'Obligatòries'], ['Computació', 'Computació'],
+    ['Enginyeria de Computadors', 'Enginyeria de Computadors'], ['Enginyeria del Software', 'Enginyeria del Software'],
+    ["Sistemes d'Informació", "Sistemes d'Informació"], ['Tecnologies de la informació', 'Tecnologies de la informació'],
+    ['Optativa', 'Optatives']
+  ];
+  let modalTplOpen = false, modalTplQuery = '', modalTplGroup = 'all';
+  function normTxt(x) { return String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+  function tplMatches() {
+    const q = normTxt(modalTplQuery).trim();
+    return allTemplates().filter(t => {
+      if (modalTplGroup !== 'all' && !(t.groups || []).includes(modalTplGroup)) return false;
+      if (!q) return true;
+      return normTxt(t.code).includes(q) || normTxt(t.name).includes(q);
+    });
+  }
+  function tplListHtml() {
+    const list = tplMatches();
+    if (!list.length) return '<div class="tpl-empty">Cap assignatura coincideix amb la cerca.</div>';
+    return list.map(t => {
+      const tag = t.q ? 'Q' + t.q : ((t.groups || [])[0] === 'Optativa' ? 'Optativa' : 'Menció');
+      return '<button type="button" class="tpl-row" onclick="selectTemplate(\'' + escapeHtml(t.code) + '\')">' +
+        '<span class="tpl-row-code">' + escapeHtml(t.code) + '</span>' +
+        '<span class="tpl-row-name">' + escapeHtml(t.name) + '</span>' +
+        '<span class="tpl-row-meta">' + escapeHtml(tag) + ' · ' + t.ects + ' ECTS</span>' +
+      '</button>';
+    }).join('');
+  }
+  function tplChipsHtml() {
+    return TPL_FILTERS.map((f, i) =>
+      '<button type="button" class="tpl-chip' + (modalTplGroup === f[0] ? ' active' : '') + '" onclick="setTplGroup(' + i + ')">' + escapeHtml(f[1]) + '</button>'
+    ).join('');
+  }
   function templateSectionHtml() {
     if (!templatesAvailable()) return '';
     const tpls = allTemplates();
     const current = tpls.find(t => t.code === modalTemplateCode);
-    const options = tpls.map(t => '<option value="' + escapeHtml(templateLabel(t)) + '"></option>').join('');
     let info = '';
     if (current) {
       const url = (window.FIBERCALC_TEMPLATE_URL_BASE || '') + encodeURIComponent(current.code);
+      const hasEv = current.evaluations && current.evaluations.length;
       info = '<div class="tpl-note" id="tpl-note">' +
-        '<strong>Plantilla orientativa.</strong> ' +
+        (hasEv ? '<strong>Plantilla orientativa.</strong> ' : '<strong>Sense pesos a la guia.</strong> ') +
         (current.approx ? 'Els pesos són aproximats. ' : '') +
-        'Els pesos poden canviar segons el curs i el professor' +
+        (hasEv ? 'Els pesos poden canviar segons el curs i el professor' : 'Omple els apartats segons la guia de la teva assignatura') +
         (formatTplDate(current.checked) ? ' (comprovat el ' + formatTplDate(current.checked) + ')' : '') +
         '. <a href="' + escapeHtml(url) + '" target="_blank" rel="noopener">Consulta la guia oficial a la FIB</a>.' +
         (current.note ? '<div class="tpl-note-extra">' + escapeHtml(current.note) + '</div>' : '') +
         '</div>';
     }
+    const trigger = '<button type="button" class="tpl-trigger' + (modalTplOpen ? ' open' : '') + '" onclick="toggleTplPicker()" aria-expanded="' + modalTplOpen + '">' +
+      '<i class="ti ti-search"></i>' +
+      '<span class="tpl-trigger-text">' + (current ? '<strong>' + escapeHtml(current.code) + '</strong> — ' + escapeHtml(current.name) : 'Cerca una assignatura del GEI…') + '</span>' +
+      '<i class="ti ti-chevron-down tpl-trigger-caret"></i></button>';
+    const panel = modalTplOpen
+      ? '<div class="tpl-panel">' +
+          '<input type="text" id="tpl-search" class="tpl-search" autocomplete="off" placeholder="Cerca per sigla o nom (ex. BD, xarxes…)" value="' + escapeHtml(modalTplQuery) + '" oninput="onTplSearch(this.value)" />' +
+          '<div class="tpl-chips" id="tpl-chips">' + tplChipsHtml() + '</div>' +
+          '<div class="tpl-list" id="tpl-list">' + tplListHtml() + '</div>' +
+        '</div>'
+      : '';
     return '<div class="tpl-section">' +
-      '<label for="modal-template">Plantilla del grau <span style="color:var(--text-tertiary);font-weight:400;">(opcional)</span></label>' +
-      '<input type="text" id="modal-template" list="modal-template-list" autocomplete="off" ' +
-        'placeholder="Cerca per sigla o nom (ex. IDI)" ' +
-        'value="' + escapeHtml(current ? templateLabel(current) : '') + '" ' +
-        'oninput="onTemplateInput(this.value,false)" onchange="onTemplateInput(this.value,true)" />' +
-      '<datalist id="modal-template-list">' + options + '</datalist>' +
-      info + '</div>';
+      '<label>Plantilla del grau <span style="color:var(--text-tertiary);font-weight:400;">(opcional)</span></label>' +
+      trigger + panel + info + '</div>';
   }
   function applyTemplate(t) {
     captureModalFields();
-    const evs = t.evaluations.map(ev => ({
-      id: genId(),
-      name: ev.name,
-      parts: ev.parts.map(pt => ({ id: genId(), name: pt[0], weight: pt[1], grade: null }))
-    }));
     draft.sigla = t.code;
     draft.fullName = t.name;
     draft.ects = t.ects;
-    draft.evaluations = evs;
-    draft.activeEval = evs[0].id;
-    modalActiveEval = evs[0].id;
+    if (t.evaluations && t.evaluations.length) {
+      const evs = t.evaluations.map(ev => ({
+        id: genId(),
+        name: ev.name,
+        parts: ev.parts.map(pt => ({ id: genId(), name: pt[0], weight: pt[1], grade: null }))
+      }));
+      draft.evaluations = evs;
+      draft.activeEval = evs[0].id;
+      modalActiveEval = evs[0].id;
+    }
     modalTemplateCode = t.code;
     renderModal();
   }
-  window.onTemplateInput = function(value, isChange) {
-    const v = (value || '').trim().toLowerCase();
-    if (!v) return;
-    const tpls = allTemplates();
-    let t = tpls.find(x => templateLabel(x).toLowerCase() === v);
-    if (!t && isChange) t = tpls.find(x => x.code.toLowerCase() === v);
-    if (t && t.code !== modalTemplateCode) applyTemplate(t);
+  window.toggleTplPicker = function() {
+    captureModalFields();
+    modalTplOpen = !modalTplOpen;
+    renderModal();
+    if (modalTplOpen) {
+      const el = document.getElementById('tpl-search');
+      if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } }
+      const panel = document.querySelector('.tpl-panel');
+      if (panel && panel.scrollIntoView) panel.scrollIntoView({ block: 'nearest' });
+    }
+  };
+  window.onTplSearch = function(v) {
+    modalTplQuery = v || '';
+    const list = document.getElementById('tpl-list');
+    if (list) { list.innerHTML = tplListHtml(); list.scrollTop = 0; }
+  };
+  window.setTplGroup = function(i) {
+    modalTplGroup = TPL_FILTERS[i] ? TPL_FILTERS[i][0] : 'all';
+    const chips = document.getElementById('tpl-chips');
+    const list = document.getElementById('tpl-list');
+    if (chips) chips.innerHTML = tplChipsHtml();
+    if (list) { list.innerHTML = tplListHtml(); list.scrollTop = 0; }
+  };
+  window.selectTemplate = function(code) {
+    const t = allTemplates().find(x => x.code === code);
+    if (!t) return;
+    modalTplOpen = false;
+    applyTemplate(t);
   };
 
   function renderEvalTabs() {
