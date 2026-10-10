@@ -333,15 +333,29 @@
     };
   }
 
+  let filtersExpanded = false;
   function renderFilters() {
     const bar = document.getElementById('filter-bar');
     const usedQuatris = [...new Set(state.subjects.map(s => s.quatri))].sort((a,b) => QUATRIS.indexOf(a) - QUATRIS.indexOf(b));
+    // Amb molts quatrimestres només es mostren els més recents (i l'actiu); la resta es desplega amb "Més"
+    const MAX = 4;
+    let shown = usedQuatris;
+    if (!filtersExpanded && usedQuatris.length > MAX) {
+      shown = usedQuatris.slice(0, MAX);
+      if (activeFilter !== 'ALL' && !shown.includes(activeFilter) && usedQuatris.includes(activeFilter)) {
+        shown = shown.slice(0, MAX - 1).concat(activeFilter);
+      }
+    }
     let html = '<button class="filter-chip ' + (activeFilter === 'ALL' ? 'active' : '') + '" onclick="setFilter(\'ALL\')">Totes</button>';
-    usedQuatris.forEach(q => {
+    shown.forEach(q => {
       html += '<button class="filter-chip ' + (activeFilter === q ? 'active' : '') + '" onclick="setFilter(\'' + q + '\')">' + q + '</button>';
     });
+    const hidden = usedQuatris.length - shown.length;
+    if (hidden > 0) html += '<button class="filter-chip more" onclick="toggleFilters()">Més (+' + hidden + ')</button>';
+    else if (filtersExpanded && usedQuatris.length > MAX) html += '<button class="filter-chip more" onclick="toggleFilters()">Menys</button>';
     bar.innerHTML = html;
   }
+  window.toggleFilters = function() { filtersExpanded = !filtersExpanded; renderFilters(); };
 
   window.setFilter = function(f) {
     activeFilter = f;
@@ -473,19 +487,29 @@
     if (open) { closeCardMenu(); open.focus(); }
   });
 
+  // Frase sota el títol: quatrimestre actiu i nombre d'assignatures
+  function updateOverall() {
+    const el = document.getElementById('overall');
+    if (!el) return;
+    if (state.subjects.length === 0) { el.textContent = 'Afegeix la teva primera assignatura'; return; }
+    const n = getFiltered().length;
+    const noun = n === 1 ? 'assignatura' : 'assignatures';
+    el.textContent = activeFilter === 'ALL' ? (n + ' ' + noun + ' en total') : (activeFilter + ' · ' + n + ' ' + noun);
+  }
+
   function render() {
     const grid = document.getElementById('grid');
     const filtered = getFiltered();
+    updateOverall();
     if (state.subjects.length === 0) {
       grid.innerHTML = '<div class="grid-empty">Encara no tens cap assignatura.<br>Comença afegint-ne una.</div>';
-      document.getElementById('overall').textContent = '—';
+      renderDashboard();
       return;
     }
     if (filtered.length === 0) {
       grid.innerHTML = '<div class="grid-empty">No hi ha assignatures en aquest filtre.</div>';
       return;
     }
-    let validGrades = [], passing = 0;
     const newStatus = {};
 
     grid.innerHTML = filtered.map(s => {
@@ -496,9 +520,6 @@
       newStatus[s.id] = statusType;
       const justPassed = !firstRender && statusType === 'pass' && prevStatus[s.id] !== 'pass';
       const justFailed = !firstRender && statusType === 'fail' && prevStatus[s.id] !== 'fail';
-      // Mitjana nomes amb assignatures finalitzades
-      if (g !== null && status.final) { validGrades.push(g); if (g >= 5) passing++; }
-
       let animClass = '';
       if (justPassed) animClass = ' passed-anim';
       else if (justFailed) animClass = ' failed-anim';
@@ -553,15 +574,6 @@
     prevStatus = newStatus;
     firstRender = false;
 
-    if (validGrades.length > 0) {
-      const avg = validGrades.reduce((a,b)=>a+b,0) / validGrades.length;
-      const scope = activeFilter === 'ALL' ? state.subjects.length : filtered.length;
-      document.getElementById('overall').innerHTML =
-        '<div class="stats"><span class="stat">Mitjana <strong>' + fmt(avg) + '</strong></span>' +
-        '<span class="stat">Aprovades <strong>' + passing + '/' + scope + '</strong></span></div>';
-    } else {
-      document.getElementById('overall').textContent = state.subjects.length + ' assignatures · sense notes encara';
-    }
     renderDashboard();
   }
 
@@ -634,7 +646,6 @@
 
     const avg = grades.length > 0 ? grades.reduce((a,b)=>a+b,0) / grades.length : null;
     const avgText = avg !== null ? fmt(avg) : '—';
-    const avgClass = avg === null ? '' : (avg >= 5 ? ' accent-pass' : ' accent-fail');
     const fmtEcts = (n) => { const r = Math.round(n * 10) / 10; return r % 1 === 0 ? String(r) : r.toFixed(1); };
 
     // Comparativa amb quatri anterior (nomes si filtre = quatri especific)
@@ -662,70 +673,76 @@
       }
     }
 
+    // En curs / per començar (assignatures sense estat final)
+    let inProgress = 0, notStarted = 0;
+    filtered.forEach(s => {
+      if (getStatus(s).final) return;
+      if (calcGrade(s) === null) notStarted++; else inProgress++;
+    });
+    const passedPct = total > 0 ? Math.round(passed / total * 100) : 0;
+    const ectsPct = totalEcts > 0 ? passedEcts / totalEcts : 0;
+    const CIRC = 113.1;
+    const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
+
     let cards = '';
-    cards += '<div class="metric-card' + avgClass + '">' +
-        '<div class="metric-label"><i class="ti ti-chart-line"></i>Mitjana</div>' +
-        '<div class="metric-value">' + avgText + deltaHtml + '</div>' +
-        '<div class="metric-subvalue">' + grades.length + ' finalitzades</div>' +
+    cards += '<div class="st">' +
+        '<div class="l"><i class="ti ti-chart-line"></i>Mitjana</div>' +
+        '<div class="v">' + avgText + deltaHtml + '</div>' +
+        '<div class="s">' + (grades.length > 0 ? plural(grades.length, 'finalitzada', 'finalitzades') : 'Apareixerà amb la primera assignatura finalitzada') + '</div>' +
       '</div>';
-    cards += '<div class="metric-card accent-pass">' +
-        '<div class="metric-label"><i class="ti ti-school"></i>ECTS aprovats</div>' +
-        '<div class="metric-value">' + fmtEcts(passedEcts) + '<span style="font-size:16px;color:var(--text-tertiary);font-weight:500;"> / ' + fmtEcts(totalEcts) + '</span></div>' +
-        '<div class="metric-subvalue">' + (totalEcts > 0 ? Math.round(passedEcts/totalEcts*100) : 0) + '% del total</div>' +
+    cards += '<div class="st">' +
+        '<div class="l"><i class="ti ti-school"></i>ECTS aprovats</div>' +
+        '<div class="st-ring"><div>' +
+          '<div class="v">' + fmtEcts(passedEcts) + '<small>/ ' + fmtEcts(totalEcts) + '</small></div>' +
+          '<div class="s">' + Math.round(ectsPct * 100) + '% del total</div></div>' +
+          '<svg width="46" height="46" viewBox="0 0 46 46" aria-hidden="true"><circle cx="23" cy="23" r="18" stroke="rgba(255,255,255,0.28)" stroke-width="5" fill="none"/>' +
+          '<circle cx="23" cy="23" r="18" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="' + (ectsPct * CIRC).toFixed(1) + ' ' + CIRC + '" transform="rotate(-90 23 23)"/></svg>' +
+        '</div>' +
       '</div>';
-    cards += '<div class="metric-card accent-pass">' +
-        '<div class="metric-label"><i class="ti ti-circle-check"></i>Aprovades</div>' +
-        '<div class="metric-value">' + passed + '<span style="font-size:16px;color:var(--text-tertiary);font-weight:500;"> / ' + total + '</span></div>' +
-        '<div class="metric-subvalue">' + (total > 0 ? Math.round(passed/total*100) : 0) + '% del total</div>' +
+    const progressBits = [];
+    if (inProgress > 0) progressBits.push(inProgress + ' en curs');
+    if (notStarted > 0) progressBits.push(notStarted + ' per començar');
+    cards += '<div class="st">' +
+        '<div class="l"><i class="ti ti-circle-check"></i>Aprovades</div>' +
+        '<div class="v">' + passed + '<small>/ ' + total + '</small></div>' +
+        '<div class="s">' + (progressBits.length ? progressBits.join(' · ') : passedPct + '% del total') + '</div>' +
       '</div>';
-    if (hasRepeated) {
-      cards += '<div class="metric-card accent-pass">' +
-        '<div class="metric-label"><i class="ti ti-medal"></i>1a matrícula</div>' +
-        '<div class="metric-value">' + firstTryPct + '%<span style="font-size:16px;color:var(--text-tertiary);font-weight:500;"></span></div>' +
-        '<div class="metric-subvalue">' + firstTryPassed + ' de ' + firstTryTotal + ' aprovades</div>' +
-      '</div>';
-    } else {
-      cards += '<div class="metric-card accent-warn">' +
-        '<div class="metric-label"><i class="ti ti-clock"></i>Pendents</div>' +
-        '<div class="metric-value">' + pending + '</div>' +
-        '<div class="metric-subvalue">sense totes les notes</div>' +
+    if (hasRepeated && firstTryTotal > 0) {
+      cards += '<div class="st">' +
+        '<div class="l"><i class="ti ti-medal"></i>1a matrícula</div>' +
+        '<div class="v">' + firstTryPct + '%</div>' +
+        '<div class="s">' + firstTryPassed + ' de ' + firstTryTotal + ' aprovades a la 1a</div>' +
       '</div>';
     }
 
-    // Countdown: 3 events mes propers
+    // Proper esdeveniment (del calendari)
     const today = new Date();
     const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const upcomingEvents = state.events
+    const upcoming = (state.events || [])
       .filter(ev => new Date(ev.date + 'T00:00:00') >= todayMid)
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(0, 3);
-
-    if (state.events && state.events.length > 0) {
-      let countdownContent = '';
-      if (upcomingEvents.length === 0) {
-        countdownContent = '<div class="countdown-empty">Cap event proper</div>';
-      } else {
-        countdownContent = '<div class="countdown-events">' + upcomingEvents.map(ev => {
-          const evDate = new Date(ev.date + 'T00:00:00');
-          const days = daysBetween(todayMid, evDate);
-          let label, cls = '';
-          if (days === 0) { label = 'AVUI'; cls = 'today'; }
-          else if (days <= 3) { label = days + 'd'; cls = 'urgent'; }
-          else if (days <= 7) { label = days + 'd'; cls = 'soon'; }
-          else { label = days + 'd'; }
-          const subject = ev.subjectId ? state.subjects.find(s => s.id === ev.subjectId) : null;
-          const subj = subject ? ' (' + (subject.sigla || subject.name || '') + ')' : '';
-          const type = getEventType(ev.type);
-          return '<div class="countdown-event" onclick="switchPage(\'calendar\');" style="cursor:pointer;">' +
-            '<span class="countdown-event-name"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + type.color + ';margin-right:6px;vertical-align:middle;"></span>' + escapeHtml((ev.title || type.label) + subj) + '</span>' +
-            '<span class="countdown-event-days ' + cls + '">' + label + '</span>' +
-          '</div>';
-        }).join('') + '</div>';
-      }
-      cards += '<div class="countdown-card">' +
-        '<div class="countdown-title"><i class="ti ti-calendar-time"></i>Propers events</div>' +
-        countdownContent +
-      '</div>';
+      .sort((a, b) => a.date.localeCompare(b.date));
+    if (upcoming.length === 0) {
+      cards += '<button type="button" class="st ev" onclick="switchPage(\'calendar\')">' +
+          '<div class="l"><i class="ti ti-calendar-event"></i>Proper esdeveniment</div>' +
+          '<div class="v t">Cap esdeveniment</div>' +
+          '<div class="s">Afegeix un parcial o una entrega al calendari</div>' +
+        '</button>';
+    } else {
+      const ev = upcoming[0];
+      const days = daysBetween(todayMid, new Date(ev.date + 'T00:00:00'));
+      const subject = ev.subjectId ? state.subjects.find(s => s.id === ev.subjectId) : null;
+      const type = getEventType(ev.type);
+      const baseName = ev.title || type.label;
+      const sig = subject ? (subject.sigla || subject.name || '') : '';
+      const name = sig && !baseName.toUpperCase().includes(sig.toUpperCase()) ? baseName + ' · ' + sig : baseName;
+      const when = days === 0 ? 'Avui' : days === 1 ? 'Demà' : 'd\'aquí a ' + days + ' dies';
+      const urgency = days <= 3 ? ' urgent' : days <= 7 ? ' soon' : '';
+      cards += '<button type="button" class="st ev" onclick="switchPage(\'calendar\')">' +
+          '<div class="l"><i class="ti ti-calendar-event"></i>Proper esdeveniment</div>' +
+          '<div class="v t" title="' + escapeHtml(name) + '">' + escapeHtml(name) + '</div>' +
+          '<span class="days' + urgency + '">' + when + '</span>' +
+          (upcoming.length > 1 ? '<div class="s">+' + (upcoming.length - 1) + ' més al calendari</div>' : '') +
+        '</button>';
     }
 
     dash.innerHTML = cards;
@@ -816,25 +833,6 @@
       if (inp) inp.placeholder = tileHint(s, p);
     });
 
-    let validGrades = [], passing = 0;
-    state.subjects.forEach(sub => {
-      const sg = calcGrade(sub);
-      const sst = getStatus(sub);
-      if (sg !== null && sst.final) {
-        validGrades.push(sg);
-        if (sg >= 5) passing++;
-      }
-    });
-    if (validGrades.length > 0) {
-      const avg = validGrades.reduce((a,b)=>a+b,0) / validGrades.length;
-      const filtered = getFiltered();
-      const scope = activeFilter === 'ALL' ? state.subjects.length : filtered.length;
-      document.getElementById('overall').innerHTML =
-        '<div class="stats"><span class="stat">Mitjana <strong>' + fmt(avg) + '</strong></span>' +
-        '<span class="stat">Aprovades <strong>' + passing + '/' + scope + '</strong></span></div>';
-    } else {
-      document.getElementById('overall').textContent = state.subjects.length + ' assignatures · sense notes encara';
-    }
     renderDashboard();
   }
 
@@ -1294,6 +1292,7 @@
     else if (page === 'calendar') title = 'Calendari';
     else title = 'Amics';
     document.getElementById('page-title').textContent = title;
+    document.getElementById('hero').classList.toggle('compact', page !== 'notes');
     if (page === 'stats') renderStats();
     if (page === 'calendar') renderCalendar();
     if (page === 'friends') renderFriends();
@@ -2950,7 +2949,7 @@
         grid.classList.add('cards-in');
         setTimeout(() => grid.classList.remove('cards-in'), 1000);
       }
-      document.querySelectorAll('#dashboard .metric-value').forEach(animateCountUp);
+      document.querySelectorAll('#dashboard .st .v').forEach(animateCountUp);
     } else if (page === 'stats') {
       view.querySelectorAll('.progress-circle-bar').forEach(el => {
         const finalOffset = el.getAttribute('stroke-dashoffset');
