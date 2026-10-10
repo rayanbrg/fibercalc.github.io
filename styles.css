@@ -174,7 +174,7 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
 
 /* Targeta tancada: pòster del color de l'assignatura (sigla i nota en blanc) */
 .card::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity 0.4s var(--ease);
-  background: radial-gradient(circle 110px at calc(100% - 10px) 0, rgba(255,255,255,0.16) 0 100%, transparent 100%), linear-gradient(135deg, color-mix(in srgb, var(--c) 100%, #fff 8%), color-mix(in srgb, var(--c) 68%, #000)); }
+  background: linear-gradient(120deg, transparent 0 43%, rgba(255,255,255,0.15) 43% 100%) right top / 240px 100% no-repeat, linear-gradient(135deg, color-mix(in srgb, var(--c) 100%, #fff 8%), color-mix(in srgb, var(--c) 68%, #000)); }
 .card.closed { border-color: transparent; }
 .card.closed::before { opacity: 1; }
 .card > .fold { position: relative; z-index: 1; }
@@ -182,9 +182,9 @@ body { margin: 0; background: var(--bg); color: var(--text-primary); font-family
 .card.reorder-mode .card-closed { cursor: inherit; }
 .card-closed:focus-visible { outline: 2px solid #fff; }
 .cc-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; padding: 4px 6px 0; }
-.cc-sigla { min-width: 0; font-size: 46px; font-weight: 800; letter-spacing: -0.04em; line-height: 0.95; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cc-sigla { min-width: 0; font-size: 42px; font-weight: 800; letter-spacing: -0.04em; line-height: 0.95; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cc-grade { flex: none; }
-.cc-v { display: block; font-size: 52px; font-weight: 800; letter-spacing: -0.05em; line-height: 0.9; font-variant-numeric: tabular-nums; }
+.cc-v { display: block; font-size: 47px; font-weight: 800; letter-spacing: -0.05em; line-height: 0.9; font-variant-numeric: tabular-nums; }
 .cc-chev { display: grid; place-items: center; height: 14px; margin-top: 4px; color: rgba(255,255,255,0.75); font-size: 18px; transition: color 0.2s, transform 0.25s var(--ease); }
 .card-closed:hover .cc-chev { color: #fff; transform: translateY(2px); }
 
