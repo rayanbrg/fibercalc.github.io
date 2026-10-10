@@ -1389,6 +1389,8 @@
   const SCH_TIPUS = { T: 'Teoria', P: 'Problemes', L: 'Laboratori' };
   const SCH_ROW = 56; // alçada d'una hora a la graella (px)
   let schedQuery = '';
+  let schedView = null; // 'day' | 'week' (per defecte: dia al mòbil, setmana a l'ordinador)
+  let schedDay = null;  // 1..5
 
   function schedData() { return window.FIBERCALC_HORARIS || null; }
   function getSched() {
@@ -1477,6 +1479,42 @@
     return conflicts;
   }
 
+  function schedT(min) { return String(Math.floor(min / 60)).padStart(2, '0') + ':' + String(min % 60).padStart(2, '0'); }
+  // Dilluns de la setmana que toca mostrar (cap de setmana: la següent)
+  function schedMonday() {
+    const d = new Date(); d.setHours(0, 0, 0, 0);
+    const dow = d.getDay();
+    d.setDate(d.getDate() + (dow === 0 ? 1 : dow === 6 ? 2 : 1 - dow));
+    return d;
+  }
+  function schedDayView(blocks, todayDow, nowMin) {
+    const mon = schedMonday();
+    const chips = [1, 2, 3, 4, 5].map(d => {
+      const dt = new Date(mon); dt.setDate(mon.getDate() + d - 1);
+      const n = blocks.filter(b => b.dia === d).length;
+      return '<button type="button" class="sch-chip' + (d === schedDay ? ' on' : '') + (d === todayDow ? ' today' : '') + '" aria-pressed="' + (d === schedDay) + '" onclick="schedSetDay(' + d + ')">' +
+        '<span>' + SCH_DIES[d - 1] + '</span><b>' + dt.getDate() + '</b><i class="' + (n ? 'has' : '') + '"></i></button>';
+    }).join('');
+    const day = blocks.filter(b => b.dia === schedDay).sort((x, y) => x.start - y.start);
+    const isToday = schedDay === todayDow;
+    const list = day.length ? day.map(b => {
+      let when = '';
+      if (isToday) {
+        const end = b.start + b.dur;
+        if (nowMin >= b.start && nowMin < end) when = '<div class="sch-bw"><b>ARA</b><small>fins a les ' + schedT(end) + '</small></div>';
+        else if (nowMin < b.start) { const m = b.start - nowMin; when = '<div class="sch-bw"><b>' + (m >= 60 ? Math.round(m / 60) + ' h' : m + ' min') + '</b><small>per començar</small></div>'; }
+        else when = '<div class="sch-bw"><b>Fet</b><small>acabada</small></div>';
+      }
+      const done = isToday && nowMin >= b.start + b.dur;
+      return '<div class="sch-dr"><div class="sch-dt"><b>' + schedT(b.start) + '</b><small>' + schedT(b.start + b.dur) + '</small></div>' +
+        '<div class="sch-big t-' + b.tipus + (b.conflict ? ' conflict' : '') + (done ? ' done' : '') + '" style="--bc:' + b.color + '">' +
+          '<div><div class="sch-bs">' + escapeHtml(b.code) + '</div><div class="sch-bm">' + SCH_TIPUS[b.tipus] + ' · grup ' + escapeHtml(b.grup) + ' · ' + escapeHtml(b.aula) + '</div></div>' + when + '</div></div>';
+    }).join('') : '<div class="sch-free"><i class="ti ti-sun"></i>Cap classe aquest dia</div>';
+    return '<div class="sch-dayview"><div class="sch-chips">' + chips + '</div><div class="sch-dlist">' + list + '</div></div>';
+  }
+  window.schedSetView = function(v) { schedView = v; renderSchedule(); };
+  window.schedSetDay = function(d) { schedDay = d; renderSchedule(); };
+
   function renderSchedule() {
     const root = document.getElementById('schedule-content');
     const H = schedData();
@@ -1485,10 +1523,18 @@
     const picks = getSched().picks;
     const codes = Object.keys(picks);
     const upd = H.updated ? H.updated.split('-').reverse().join('/') : '';
+    const todayDow = new Date().getDay(); // 1..5 = dl..dv
+    if (!schedView) schedView = window.matchMedia && window.matchMedia('(max-width: 700px)').matches ? 'day' : 'week';
+    if (!schedDay) schedDay = (todayDow >= 1 && todayDow <= 5) ? todayDow : 1;
     const head =
       '<div class="sch-top"><div><h3 class="sch-title">' + escapeHtml(H.label) + '</h3>' +
       '<div class="sch-sub">Horaris oficials de la FIB · GEI · actualitzat el ' + escapeHtml(upd) + '</div></div>' +
-      '<button type="button" class="btn btn-primary" onclick="openSchedAdd()"><i class="ti ti-plus"></i>Afegeix assignatures</button></div>';
+      '<div class="sch-tools">' +
+        (codes.length ? '<div class="sch-seg" role="tablist">' +
+          '<button type="button" class="' + (schedView === 'day' ? 'on' : '') + '" onclick="schedSetView(\'day\')">Dia</button>' +
+          '<button type="button" class="' + (schedView === 'week' ? 'on' : '') + '" onclick="schedSetView(\'week\')">Setmana</button></div>' : '') +
+        '<button type="button" class="btn btn-primary" onclick="openSchedAdd()"><i class="ti ti-plus"></i><span class="sch-add-t">Afegeix assignatures</span></button>' +
+      '</div></div>';
 
     if (!codes.length) {
       const mine = schedMine();
@@ -1511,7 +1557,6 @@
     if (!blocks.length) { t0 = 8 * 60; t1 = 14 * 60; }
     if (t1 - t0 < 6 * 60) t1 = t0 + 6 * 60;
     const hours = (t1 - t0) / 60;
-    const todayDow = new Date().getDay(); // 1..5 = dl..dv
     const now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
     let times = '', cols = '', heads = '<div class="sch-corner"></div>';
     for (let i = 0; i <= hours; i++) times += '<span style="top:' + (i * SCH_ROW) + 'px">' + (t0 / 60 + i) + ':00</span>';
@@ -1520,7 +1565,7 @@
       const bs = blocks.filter(b => b.dia === d).map(b => {
         const top = (b.start - t0) / 60 * SCH_ROW, h = b.dur / 60 * SCH_ROW;
         const tip = b.code + ' · ' + SCH_TIPUS[b.tipus] + ' grup ' + b.grup + '\n' + schedSlot([0, 0, 0, b.dia, b.start, b.dur]) + '\nAula ' + b.aula + (b.idioma ? ' · ' + b.idioma : '');
-        return '<div class="sch-b t-' + b.tipus + (b.conflict ? ' conflict' : '') + '" title="' + escapeHtml(tip) + '" style="--bc:' + b.color + ';top:' + (top + 1) + 'px;height:' + (h - 2) + 'px;left:calc(' + (b.lane / b.lanes * 100) + '% + 2px);width:calc(' + (100 / b.lanes) + '% - 4px)">' +
+        return '<div class="sch-b t-' + b.tipus + (b.conflict ? ' conflict' : '') + (h < 70 ? ' sm' : '') + '" title="' + escapeHtml(tip) + '" style="--bc:' + b.color + ';top:' + (top + 1) + 'px;height:' + (h - 2) + 'px;left:calc(' + (b.lane / b.lanes * 100) + '% + 2px);width:calc(' + (100 / b.lanes) + '% - 4px)">' +
           '<b>' + escapeHtml(b.code) + '</b><span class="sch-bt">' + b.tipus + ' ' + escapeHtml(b.grup) + '</span><em>' + escapeHtml(b.aula) + '</em></div>';
       }).join('');
       const nowLine = (d === todayDow && nowMin >= t0 && nowMin <= t1) ? '<div class="sch-now" style="top:' + ((nowMin - t0) / 60 * SCH_ROW) + 'px"></div>' : '';
@@ -1570,7 +1615,8 @@
     });
     const avisosHtml = avisos.length ? '<div class="sch-avisos"><h4><i class="ti ti-info-circle"></i>Avisos de la FIB</h4><ul>' + avisos.join('') + '</ul></div>' : '';
 
-    root.innerHTML = head + warn + grid + '<h4 class="sch-h">Les meves assignatures</h4><div class="sch-subjs">' + subj + '</div>' + avisosHtml;
+    const main = schedView === 'day' ? schedDayView(blocks, todayDow, nowMin) : grid;
+    root.innerHTML = head + warn + main + '<h4 class="sch-h">Les meves assignatures</h4><div class="sch-subjs">' + subj + '</div>' + avisosHtml;
   }
 
   window.schedPick = function(code, tipus, grup) {
