@@ -2,7 +2,6 @@
   const STORAGE_KEY = 'fibercalc-data';
   const THEME_KEY = 'fibercalc-theme';
   const FILTER_KEY = 'fibercalc-filter';
-  const COLLAPSED_KEY = 'fibercalc-collapsed';
   const PALETTE = [
     { name: 'purple', bg: '#A78BFA' },
     { name: 'teal',   bg: '#14B8A6' },
@@ -401,35 +400,18 @@
     });
     return { parts, earned, evaluated, pending, pendingCount };
   }
-  // Vista de la targeta tancada: banda amb el color de l'assignatura (sigla gran + nota) i les parts en petit
+  // Vista de la targeta tancada: només la sigla i la nota, i la fletxa per obrir
   function cardClosedHtml(s, m) {
     const st = getStatus(s);
     const color = getColor(s.color);
     const sigla = s.sigla || s.name || '';
     const grade = st.final ? st.grade : m.earned;
-    const label = st.final ? 'Nota final' : 'Acumulada';
-    let pill = '';
-    if (st.final) {
-      pill = st.type === 'pass' ? '<span class="cb-pill"><i class="ti ti-check"></i>Aprovada</span>'
-           : st.type === 'compensable' ? '<span class="cb-pill"><i class="ti ti-scale"></i>Compensable</span>'
-           : '<span class="cb-pill"><i class="ti ti-x"></i>Suspesa</span>';
-    } else if (st.secured) pill = '<span class="cb-pill"><i class="ti ti-check"></i>Assegurada</span>';
-    else if (st.impossible) pill = '<span class="cb-pill"><i class="ti ti-alert-triangle"></i>Inaccessible</span>';
-    const matricula = getMatriculaInfo(s);
-    const matChip = matricula.num > 1 ? '<span class="cb-chip"><i class="ti ti-bookmark"></i>' + matricula.num + 'a matrícula</span>' : '';
-    const MAXP = 4;
-    const shown = m.parts.slice(0, MAXP);
-    let parts = shown.map((p, i) =>
-      '<div class="cp ' + partTone(p) + (hasGrade(p) ? '' : ' empty') + '"><div class="cp-n" title="' + escapeHtml(p.name || '') + '">' + escapeHtml(p.name || ('Part ' + (i + 1))) + '</div><div class="cp-g">' + (hasGrade(p) ? fmt(parseFloat(p.grade)) : '–') + '</div></div>'
-    ).join('');
-    if (m.parts.length > MAXP) parts += '<div class="cp more"><div class="cp-n">més</div><div class="cp-g">+' + (m.parts.length - MAXP) + '</div></div>';
-    return '<div class="cb" style="background:' + color.bg + ';">' +
-      '<div class="cb-sigla">' + escapeHtml(sigla) + '</div>' +
-      '<div class="cb-grade">' + fmt(grade) + '</div>' +
-      '<div class="cb-chips">' + matChip + pill + '</div>' +
-      '<div class="cb-k">' + label + '</div>' +
-    '</div>' + (parts ? '<div class="cps">' + parts + '</div>' : '') +
-      (reorderMode ? '' : '<div class="cc-chev" aria-hidden="true"><i class="ti ti-chevron-down"></i></div>');
+    const tone = st.final ? (st.type === 'pass' ? 'ok' : st.type === 'compensable' ? 'mid' : 'bad') : '';
+    return '<div class="cc-row">' +
+      '<div class="cc-sigla" style="--sw:' + color.bg + '">' + escapeHtml(sigla) + '</div>' +
+      '<div class="cc-grade ' + tone + '"><span class="cc-k">' + (st.final ? 'Nota final' : 'Acumulada') + '</span><span class="cc-v">' + fmt(grade) + '</span></div>' +
+    '</div>' +
+    (reorderMode ? '' : '<div class="cc-chev" aria-hidden="true"><i class="ti ti-chevron-down"></i></div>');
   }
   function cardHeroHtml(s, m) {
     const st = getStatus(s);
@@ -474,22 +456,32 @@
     if (st.needed !== null && st.needed !== undefined) return '<span class="chip warn"><i class="ti ti-target"></i>Encara aprovable</span>';
     return '<span class="chip warn"><i class="ti ti-pencil"></i>Sense notes</span>';
   }
-  // Targetes tancades (es recorden entre visites)
-  let collapsed = {};
-  try { collapsed = JSON.parse(localStorage.getItem(COLLAPSED_KEY) || '{}') || {}; } catch (e) { collapsed = {}; }
-  function saveCollapsed() { try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify(collapsed)); } catch (e) {} }
+  // Targetes: per defecte tancades; les obertes es recorden mentre la pàgina és oberta
+  const openCards = new Set();
+  function setFold(card, open) {
+    card.classList.toggle('closed', !open);
+    const full = card.querySelector('.fold-full'), mini = card.querySelector('.fold-mini');
+    if (full) full.inert = !open;
+    if (mini) mini.inert = open;
+    const mb = card.querySelector('.card-closed');
+    if (mb) mb.setAttribute('aria-expanded', String(open));
+  }
   window.toggleCard = function(id, ev) {
     if (reorderMode) return;
     if (ev && ev.target.closest('.card-menu-wrap, .card-menu')) return;
     const card = document.querySelector('[data-card-id="' + id + '"]');
     if (!card) return;
-    const closed = !card.classList.contains('closed');
-    card.classList.toggle('closed', closed);
-    if (closed) collapsed[id] = 1; else delete collapsed[id];
-    saveCollapsed();
-    const btn = card.querySelector('.chev');
-    if (btn) { btn.setAttribute('aria-expanded', String(!closed)); btn.setAttribute('aria-label', closed ? 'Obrir targeta' : 'Tancar targeta'); }
+    const open = card.classList.contains('closed');
     closeCardMenu();
+    // Mentre dura l'animació el contingut es retalla; després es deixa visible (menú ⋯, ombres de focus)
+    card.classList.add('folding');
+    clearTimeout(card._foldT);
+    card._foldT = setTimeout(() => card.classList.remove('folding'), 520);
+    setFold(card, open);
+    if (open) openCards.add(id); else openCards.delete(id);
+  };
+  window.onClosedKey = function(id, ev) {
+    if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); window.toggleCard(id, ev); }
   };
   function tileHint(s, p) {
     const need = calcNeededPerPart(s);
@@ -604,24 +596,28 @@
         ? '<span class="card-grip" aria-hidden="true"><i class="ti ti-grip-vertical"></i></span>'
         : '<div class="card-menu-wrap"><button type="button" class="kebab" aria-label="Més opcions" aria-haspopup="menu" aria-expanded="false" onclick="toggleCardMenu(\'' + s.id + '\', event)"><i class="ti ti-dots"></i></button></div>';
 
-      const isClosed = !!collapsed[s.id];
-      const chevHtml = reorderMode ? '' : '<button type="button" class="chev" aria-expanded="' + (!isClosed) + '" aria-label="' + (isClosed ? 'Obrir targeta' : 'Tancar targeta') + '"><i class="ti ti-chevron-up"></i></button>';
+      const isClosed = reorderMode || !openCards.has(s.id);
+      const chevHtml = reorderMode ? '' : '<button type="button" class="chev" aria-label="Tancar targeta"><i class="ti ti-chevron-up"></i></button>';
 
-      return '<div class="card' + animClass + reorderClass + (isClosed ? ' closed' : '') + '" data-card-id="' + s.id + '"' + dragAttrs + '>' +
-        '<div class="card-head" onclick="toggleCard(\'' + s.id + '\', event)">' +
-          '<div class="mono" style="background:' + color.bg + ';font-size:' + monoFontSize(sigla) + 'px;">' + escapeHtml(sigla) + '</div>' +
-          '<div class="card-title">' +
-            '<h3 class="card-name">' + escapeHtml(title) + '</h3>' +
-            '<div class="card-meta"><span>' + escapeHtml(s.quatri || '') + '</span><i class="dot"></i><span>' + escapeHtml(String(s.ects || 6)) + ' ECTS</span>' + matriculaHtml + '</div>' +
+      return '<div class="card' + animClass + reorderClass + (isClosed ? ' closed' : '') + '" data-card-id="' + s.id + '" style="--c:' + color.bg + ';"' + dragAttrs + '>' +
+        '<div class="fold fold-mini"' + (isClosed ? '' : ' inert') + '><div class="fold-in">' +
+          '<div class="card-closed" data-closed role="button" tabindex="0" aria-expanded="' + (!isClosed) + '" aria-label="' + escapeHtml(sigla) + ': obrir targeta" onclick="toggleCard(\'' + s.id + '\', event)" onkeydown="onClosedKey(\'' + s.id + '\', event)">' + cardClosedHtml(s, m) + '</div>' +
+        '</div></div>' +
+        '<div class="fold fold-full"' + (isClosed ? ' inert' : '') + '><div class="fold-in">' +
+          '<div class="card-head" onclick="toggleCard(\'' + s.id + '\', event)">' +
+            '<div class="mono" style="background:' + color.bg + ';font-size:' + monoFontSize(sigla) + 'px;">' + escapeHtml(sigla) + '</div>' +
+            '<div class="card-title">' +
+              '<h3 class="card-name">' + escapeHtml(title) + '</h3>' +
+              '<div class="card-meta"><span>' + escapeHtml(s.quatri || '') + '</span><i class="dot"></i><span>' + escapeHtml(String(s.ects || 6)) + ' ECTS</span>' + matriculaHtml + '</div>' +
+            '</div>' +
+            menuHtml + chevHtml +
           '</div>' +
-          menuHtml + chevHtml +
-        '</div>' +
-        '<div class="card-closed" data-closed onclick="toggleCard(\'' + s.id + '\', event)">' + cardClosedHtml(s, m) + '</div>' +
-        '<div class="card-hero">' + cardHeroHtml(s, m) + '</div>' +
-        '<div class="card-barwrap">' + cardBarHtml(m) + '</div>' +
-        evalSelectorHtml +
-        '<div class="tiles">' + cardTilesHtml(s, m) + '</div>' +
-        '<div class="card-foot">' + cardChipHtml(s) + '</div>' +
+          '<div class="card-hero">' + cardHeroHtml(s, m) + '</div>' +
+          '<div class="card-barwrap">' + cardBarHtml(m) + '</div>' +
+          evalSelectorHtml +
+          '<div class="tiles">' + cardTilesHtml(s, m) + '</div>' +
+          '<div class="card-foot">' + cardChipHtml(s) + '</div>' +
+        '</div></div>' +
       '</div>';
     }).join('');
 
