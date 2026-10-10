@@ -505,10 +505,13 @@
       const name = p.name || ('Part ' + (i + 1));
       const w = fmtW(parseFloat(p.weight) || 0);
       return '<label class="tile ' + partTone(p) + '" data-part="' + p.id + '">' +
-        '<span class="t-top"><b title="' + escapeHtml(name) + '">' + escapeHtml(name) + '</b><span>' + w + '%</span></span>' +
-        '<input type="text" inputmode="decimal" autocomplete="off" placeholder="' + tileHint(s, p) + '" value="' + (hasGrade(p) ? escapeHtml(String(p.grade)) : '') + '"' +
-          ' aria-label="Nota de ' + escapeHtml(name) + ' (' + w + '%)" data-subject="' + s.id + '" data-part="' + p.id + '"' +
-          ' oninput="onGradeInput(event)" onblur="onGradeBlur(event)" />' +
+        '<b class="t-name" title="' + escapeHtml(name) + '">' + escapeHtml(name) + '</b>' +
+        '<span class="t-row">' +
+          '<input type="text" inputmode="decimal" autocomplete="off" placeholder="' + tileHint(s, p) + '" value="' + (hasGrade(p) ? escapeHtml(String(p.grade)) : '') + '"' +
+            ' aria-label="Nota de ' + escapeHtml(name) + ' (' + w + '%)" data-subject="' + s.id + '" data-part="' + p.id + '"' +
+            ' oninput="onGradeInput(event)" onblur="onGradeBlur(event)" />' +
+          '<span class="t-w">' + w + '%</span>' +
+        '</span>' +
       '</label>';
     }).join('');
   }
