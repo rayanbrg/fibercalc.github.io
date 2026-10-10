@@ -421,8 +421,8 @@
     const grade = st.final ? st.grade : m.earned;
     const tone = st.final ? (st.type === 'pass' ? 'ok' : st.type === 'compensable' ? 'mid' : 'bad') : '';
     return '<div class="cc-row">' +
-      '<div class="cc-sigla" style="--sw:' + color.bg + '">' + escapeHtml(sigla) + '</div>' +
-      '<div class="cc-grade ' + tone + '"><span class="cc-k">' + (st.final ? 'Nota final' : 'Acumulada') + '</span><span class="cc-v">' + fmt(grade) + '</span></div>' +
+      '<div class="cc-sigla">' + escapeHtml(sigla) + '</div>' +
+      '<div class="cc-grade ' + tone + '"><span class="cc-v">' + fmt(grade) + '</span></div>' +
     '</div>' +
     (reorderMode ? '' : '<div class="cc-chev" aria-hidden="true"><i class="ti ti-chevron-down"></i></div>');
   }
