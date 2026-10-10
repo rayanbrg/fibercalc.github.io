@@ -1384,6 +1384,25 @@
     playEntrance(page);
   };
 
+  // ============ AVÍS LEGAL I PRIVACITAT ============
+  window.openLegal = function() {
+    document.getElementById('modal-root').innerHTML =
+      '<div class="modal-bg" onclick="if(event.target===this)closeModal()">' +
+        '<div class="modal legal-modal" role="dialog" aria-label="Avís legal i privacitat">' +
+          '<h3>Avís legal i privacitat</h3>' +
+          '<div class="legal-body">' +
+            '<h4>Qui hi ha darrere</h4><p>FiberCalc és un projecte independent fet per un estudiant. No és un servei oficial ni està afiliat, avalat o patrocinat per la Universitat Politècnica de Catalunya (UPC) ni per la Facultat d\'Informàtica de Barcelona (FIB). Els noms i sigles es fan servir només per identificar les assignatures.</p>' +
+            '<h4>Horaris</h4><p>Els horaris provenen de la informació pública de la FIB i poden tenir errors o canviar. Consulta sempre la web oficial de la FIB abans de fiar-te\'n.</p>' +
+            '<h4>Notes i càlculs</h4><p>Els càlculs són orientatius i es fan amb el que tu hi escrius. No substitueixen les qualificacions oficials ni el que diguin les guies docents de cada assignatura.</p>' +
+            '<h4>Les teves dades</h4><p>Les notes, esdeveniments, horari i perfil es guarden al teu navegador. Si inicies sessió amb Google, també es copien al núvol (Google Firebase) per sincronitzar-les entre dispositius.</p>' +
+            '<h4>Amics</h4><p>Si afegeixes amics, ells només poden veure les teves estadístiques generals (mitjana, ECTS aprovats i mitjana per quatrimestre) i quan aproves una assignatura (sigla i nota). No veuen la resta de les teves notes. Pots eliminar un amic quan vulguis des de Amics.</p>' +
+            '<h4>Sense garanties</h4><p>L\'eina s\'ofereix tal com és, sense garanties de cap mena. Fes una còpia de les teves notes importants.</p>' +
+          '</div>' +
+          '<div class="modal-actions"><button class="btn btn-primary" onclick="closeModal()">Entesos</button></div>' +
+        '</div>' +
+      '</div>';
+  };
+
   // ============ HORARI ============
   // Dades públiques de la FIB (horaris-gei.js, generat amb tools/horaris-gei.py).
   // Cada classe: [assignatura, grup, tipus (T/P/L), dia (1 = dilluns), inici (min), durada (min), aula, idioma]

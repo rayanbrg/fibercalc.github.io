@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#0EBB80">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
-<link rel="stylesheet" href="styles.css?v=26">
+<link rel="stylesheet" href="styles.css?v=27">
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
   import { getAuth, initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence, browserPopupRedirectResolver, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
@@ -141,10 +141,14 @@
   <div id="friends-view" style="display:none;">
     <div id="friends-content"></div>
   </div>
+  <footer class="site-foot">
+    <div>FiberCalc · Projecte d'estudiants fet per Rayan. No està afiliat a la UPC ni a la FIB.</div>
+    <button type="button" class="site-foot-link" onclick="openLegal()">Avís legal i privacitat</button>
+  </footer>
   <div id="modal-root"></div>
 </div>
 <script src="plantilles-gei.js?v=1"></script>
 <script src="horaris-gei.js?v=1"></script>
-<script src="app.js?v=22"></script>
+<script src="app.js?v=23"></script>
 </body>
 </html>
