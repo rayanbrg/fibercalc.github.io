@@ -424,9 +424,10 @@
     ).join('');
     if (m.parts.length > MAXP) parts += '<div class="cp more"><div class="cp-n">més</div><div class="cp-g">+' + (m.parts.length - MAXP) + '</div></div>';
     return '<div class="cb" style="background:' + color.bg + ';">' +
-      '<div class="cb-left"><div class="cb-sigla">' + escapeHtml(sigla) + '</div>' +
-        '<div class="cb-chips"><span class="cb-chip">' + escapeHtml(s.quatri || '') + '</span>' + matChip + pill + '</div></div>' +
-      '<div class="cb-right"><div class="cb-k">' + label + '</div><div class="cb-grade">' + fmt(grade) + '</div></div>' +
+      '<div class="cb-sigla">' + escapeHtml(sigla) + '</div>' +
+      '<div class="cb-grade">' + fmt(grade) + '</div>' +
+      '<div class="cb-chips"><span class="cb-chip">' + escapeHtml(s.quatri || '') + '</span>' + matChip + pill + '</div>' +
+      '<div class="cb-k">' + label + '</div>' +
       (reorderMode ? '' : '<span class="cb-chev" aria-hidden="true"><i class="ti ti-chevron-down"></i></span>') +
     '</div>' + (parts ? '<div class="cps">' + parts + '</div>' : '');
   }
