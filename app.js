@@ -1396,6 +1396,7 @@
             '<h4>Notes i càlculs</h4><p>Els càlculs són orientatius i es fan amb el que tu hi escrius. No substitueixen les qualificacions oficials ni el que diguin les guies docents de cada assignatura.</p>' +
             '<h4>Les teves dades</h4><p>Les notes, esdeveniments, horari i perfil es guarden al teu navegador. Si inicies sessió amb Google, també es copien al núvol (Google Firebase) per sincronitzar-les entre dispositius.</p>' +
             '<h4>Amics</h4><p>Si afegeixes amics, ells només poden veure les teves estadístiques generals (mitjana, ECTS aprovats i mitjana per quatrimestre) i quan aproves una assignatura (sigla i nota). No veuen la resta de les teves notes. Pots eliminar un amic quan vulguis des de Amics.</p>' +
+            '<h4>Contacte</h4><p>Per a qualsevol dubte, error o per demanar que s\'elimini alguna dada, escriu a <a href="mailto:contacte@fibercalc.cat">contacte@fibercalc.cat</a>.</p>' +
             '<h4>Sense garanties</h4><p>L\'eina s\'ofereix tal com és, sense garanties de cap mena. Fes una còpia de les teves notes importants.</p>' +
           '</div>' +
           '<div class="modal-actions"><button class="btn btn-primary" onclick="closeModal()">Entesos</button></div>' +
