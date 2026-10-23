@@ -2620,6 +2620,73 @@
     }
   };
 
+  // ===== AMICS: sol·licituds (enviar, cancel·lar/rebutjar, acceptar, eliminar) =====
+  async function sendFriendRequest(targetUid) {
+    const myUid = fbUser.uid;
+    const id = pairId(myUid, targetUid);
+    await window.fbSetDoc(window.fbDocRef('friendships/' + id), {
+      users: [myUid, targetUid],
+      requestedBy: myUid,
+      status: 'pending',
+      createdAt: Date.now()
+    });
+  }
+
+  window.sendFriendRequestUI = async function(targetUid) {
+    try {
+      await sendFriendRequest(targetUid);
+      await window.searchFriend();
+      await renderFriendsLists();
+    } catch (err) {
+      console.error(err);
+      alert('Error enviant la sol\u00b7licitud.');
+    }
+  };
+
+  window.cancelFriendRequest = async function(otherUid) {
+    try {
+      const id = pairId(fbUser.uid, otherUid);
+      await window.fbDeleteDoc(window.fbDocRef('friendships/' + id));
+      await renderFriendsLists();
+      const resultEl = document.getElementById('friend-search-result');
+      if (resultEl && resultEl.innerHTML.trim()) await window.searchFriend();
+    } catch (err) {
+      console.error(err);
+      alert('Error cancel\u00b7lant la sol\u00b7licitud.');
+    }
+  };
+
+  window.acceptFriendRequest = async function(otherUid) {
+    try {
+      const id = pairId(fbUser.uid, otherUid);
+      const ref = window.fbDocRef('friendships/' + id);
+      const snap = await window.fbGetDoc(ref);
+      if (!snap.exists()) { await renderFriendsLists(); return; }
+      const data = snap.data();
+      data.status = 'accepted';
+      data.acceptedAt = Date.now();
+      await window.fbSetDoc(ref, data);
+      await renderFriendsLists();
+    } catch (err) {
+      console.error(err);
+      alert('Error acceptant la sol\u00b7licitud.');
+    }
+  };
+
+  window.removeFriend = async function(otherUid) {
+    if (!confirm('Deixar de ser amics? Ja no podreu veure el progr\u00e9s mutu.')) return;
+    try {
+      const id = pairId(fbUser.uid, otherUid);
+      await window.fbDeleteDoc(window.fbDocRef('friendships/' + id));
+      await renderFriendsLists();
+      const resultEl = document.getElementById('friend-search-result');
+      if (resultEl && resultEl.innerHTML.trim()) await window.searchFriend();
+    } catch (err) {
+      console.error(err);
+      alert('Error eliminant l\'amic.');
+    }
+  };
+
   // ===== AMICS: rànquing, cara a cara i resum =====
   let friendMetric = 'avg';   // criteri del rànquing: 'avg' | 'avgp' | 'ects'
   let friendH2H = null;       // uid de l'amic de la comparativa cara a cara
