@@ -828,10 +828,47 @@
     dash.innerHTML = cards;
   }
 
+  // Apartats "bessons": el mateix examen (mateix nom) a dues avaluacions diferents d'una assignatura.
+  // Només es consideren bessons si el nom és únic dins de cada avaluació (si no, no se sap quin és quin).
+  function partKey(n) { return normTxt(n).replace(/\s+/g, ' ').trim(); }
+  function uniqueKeyMap(ev) {
+    const m = new Map(), dup = new Set();
+    (ev.parts || []).forEach(p => {
+      const k = partKey(p.name);
+      if (!k) return;
+      if (m.has(k)) dup.add(k); else m.set(k, p);
+    });
+    dup.forEach(k => m.delete(k));
+    return m;
+  }
+  // Copia la nota d'un apartat a tots els seus bessons de les altres avaluacions
+  function syncTwinGrades(s, part, fromEval) {
+    const k = partKey(part.name);
+    if (!k || !fromEval || uniqueKeyMap(fromEval).get(k) !== part) return;
+    s.evaluations.forEach(ev => {
+      if (ev === fromEval) return;
+      const twin = uniqueKeyMap(ev).get(k);
+      if (twin) twin.grade = part.grade;
+    });
+  }
+  // En canviar d'avaluació: les notes que falten es completen amb les dels bessons (dades antigues)
+  function fillTwinGrades(s, ev) {
+    const mine = uniqueKeyMap(ev);
+    s.evaluations.forEach(other => {
+      if (other === ev) return;
+      uniqueKeyMap(other).forEach((op, k) => {
+        const mp = mine.get(k);
+        if (mp && !hasGrade(mp) && hasGrade(op)) mp.grade = op.grade;
+      });
+    });
+  }
+
   window.switchSubjectEval = function(subjectId, evalId) {
     const s = state.subjects.find(x => x.id === subjectId);
     if (!s) return;
     s.activeEval = evalId;
+    const target = s.evaluations.find(e => e.id === evalId);
+    if (target) fillTwinGrades(s, target);
     save();
     render();
   };
@@ -846,8 +883,10 @@
     const activeParts = getActiveParts(s);
     const p = activeParts.find(x => x.id === pId);
     if (!p) return;
+    const activeEv = s.evaluations.find(e => e.id === s.activeEval);
     if (value === '' || value === null) {
       p.grade = null;
+      syncTwinGrades(s, p, activeEv);
       save();
       updateCardLive(sId);
       return;
@@ -860,6 +899,7 @@
     const v = parseNum(value);
     if (v === null) return;
     p.grade = Math.max(0, Math.min(10, v));
+    syncTwinGrades(s, p, activeEv);
     save();
     updateCardLive(sId);
   };
@@ -874,6 +914,7 @@
     if (p && ev.target.value !== '' && (ev.target.value.endsWith('.') || ev.target.value.endsWith(','))) {
       const v = parseNum(ev.target.value);
       if (v !== null) p.grade = Math.max(0, Math.min(10, v));
+      if (v !== null) syncTwinGrades(s, p, s.evaluations.find(e => e.id === s.activeEval));
       save();
       if (v !== null) ev.target.value = String(p.grade); // "7," -> "7"
     }
