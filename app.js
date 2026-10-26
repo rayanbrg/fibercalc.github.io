@@ -2395,7 +2395,7 @@
       const firstName = (dispName.split(/\s+/)[0] || 'Compte');
       shortname.textContent = firstName;
       if (fbUser.photoURL) {
-        avatar.innerHTML = '<img src="' + fbUser.photoURL + '" alt="" referrerpolicy="no-referrer" />';
+        avatar.innerHTML = '<img src="' + escapeHtml(fbUser.photoURL) + '" alt="" referrerpolicy="no-referrer" />';
       } else {
         avatar.innerHTML = '<span class="user-btn-fallback">' + userInitials(fbUser.displayName, fbUser.email) + '</span>';
       }
@@ -2565,7 +2565,7 @@
 
   function renderFriendCard(prof, actionHtml) {
     const avatarHtml = prof.photoURL
-      ? '<img src="' + prof.photoURL + '" alt="" referrerpolicy="no-referrer" />'
+      ? '<img src="' + escapeHtml(prof.photoURL) + '" alt="" referrerpolicy="no-referrer" />'
       : '<span class="friend-avatar-fallback">' + userInitials(prof.displayName, prof.username) + '</span>';
     return '<div class="friend-card">' +
       '<div class="friend-avatar">' + avatarHtml + '</div>' +
