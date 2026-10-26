@@ -1013,7 +1013,7 @@
     } else {
       const usedColors = state.subjects.map(x => x.color);
       const freeColor = PALETTE.find(p => !usedColors.includes(p.name)) || PALETTE[state.subjects.length % PALETTE.length];
-      const defaultQuatri = (activeFilter !== 'ALL' && QUATRIS.includes(activeFilter)) ? activeFilter : '25-26 Q2';
+      const defaultQuatri = (activeFilter !== 'ALL' && QUATRIS.includes(activeFilter)) ? activeFilter : '26-27 Q1';
       const firstEvalId = genId();
       draft = { id: genId(), sigla: '', fullName: '', color: freeColor.name, quatri: defaultQuatri, ects: 6,
         evaluations: [{ id: firstEvalId, name: 'Avaluació', parts: [{ id: genId(), name: '', weight: 100, grade: null }] }],
